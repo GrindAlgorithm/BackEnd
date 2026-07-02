@@ -50,6 +50,17 @@ public class ProblemEntity {
     @Column(name = "tag", nullable = false, length = 64)
     private List<String> tags = new ArrayList<>();
 
+    // 문제 상세 노출 메타 — 연동 문서 §2.7
+    @Column(name = "time_limit_sec", nullable = false)
+    private int timeLimitSec;
+
+    @Column(name = "memory_limit_mb", nullable = false)
+    private int memoryLimitMb;
+
+    /** 예상 시간복잡도(노출 허용 메타). 없으면 null */
+    @Column(name = "expected_complexity")
+    private String expectedComplexity;
+
     // 정답률(acceptanceRate) 계산용 누적 통계 — 연동 문서 §2.7 stats
     @Column(name = "submission_count", nullable = false)
     private long submissionCount;
@@ -60,10 +71,22 @@ public class ProblemEntity {
     @Column(name = "solver_count", nullable = false)
     private long solverCount;
 
+    @Column(name = "discussion_count", nullable = false)
+    private int discussionCount;
+
     public static ProblemEntity createProblemEntity(String problemId, String displayNo, String title,
-                                                    TierName tierName, TierLevel tierLevel, SeasonEntity season,
-                                                    List<String> tags, long submissionCount, long acceptedCount, long solverCount) {
-        return new ProblemEntity(null, problemId, displayNo, title, tierName, tierLevel, season,
-                tags, submissionCount, acceptedCount, solverCount);
+                                                    TierName tierName, TierLevel tierLevel, SeasonEntity season, List<String> tags,
+                                                    int timeLimitSec, int memoryLimitMb, String expectedComplexity,
+                                                    long submissionCount, long acceptedCount, long solverCount, int discussionCount) {
+        return new ProblemEntity(null, problemId, displayNo, title, tierName, tierLevel, season, tags,
+                timeLimitSec, memoryLimitMb, expectedComplexity, submissionCount, acceptedCount, solverCount, discussionCount);
+    }
+
+    /** 정답 비율 (%, 소수 첫째 자리). 제출 없으면 0 — 연동 문서 §2.6/§2.7 */
+    public double acceptanceRate() {
+        if (submissionCount <= 0) {
+            return 0.0;
+        }
+        return Math.round(acceptedCount * 1000.0 / submissionCount) / 10.0;
     }
 }

@@ -38,7 +38,10 @@ public class SecurityConfig {
                                 // 홈 대시보드 — 인증 연동 전까지 접근 허용(추후 authenticated 로 전환)
                                 "/api/v1/dashboard",
                                 // 채점 현황 — 문제 탭 내부 탭(연동 문서 §2.12)
-                                "/api/v1/submissions/**"
+                                "/api/v1/submissions/**",
+                                // 문제 상세(본문 미포함) — 연동 문서 §2.7.
+                                // ⚠ 추후 POST /problems/{id}/open(본문) 추가 시 GET만 허용하도록 좁힐 것
+                                "/api/v1/problems/**"
                         ).permitAll()
                         .anyRequest().authenticated());
 

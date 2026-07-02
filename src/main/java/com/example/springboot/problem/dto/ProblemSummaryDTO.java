@@ -37,17 +37,10 @@ public class ProblemSummaryDTO {
                 new ArrayList<>(problem.getTags()),
                 problem.getTierName(),
                 problem.getTierLevel(),
-                acceptanceRate(problem.getSubmissionCount(), problem.getAcceptedCount()),
+                problem.acceptanceRate(),
                 TierScore.of(problem.getTierName(), problem.getTierLevel()),
                 // 인증/제출 연동 전: 항상 미시도 (연동 문서 §2.6 — 미로그인 시 전부 untried)
                 ProblemStatus.UNTRIED
         );
-    }
-
-    private static double acceptanceRate(long submissionCount, long acceptedCount) {
-        if (submissionCount <= 0) {
-            return 0.0;
-        }
-        return Math.round(acceptedCount * 1000.0 / submissionCount) / 10.0;
     }
 }

@@ -18,9 +18,13 @@ CREATE TABLE IF NOT EXISTS problem (
     tier_name        VARCHAR(16)  NOT NULL,          -- BRONZE..DIAMOND (enum 이름)
     tier_level       VARCHAR(4)   NOT NULL,          -- I..V
     season_id        INT          NULL,             -- 일반(비시즌) 문제는 NULL
+    time_limit_sec   INT          NOT NULL DEFAULT 1,   -- 시간 제한(초)
+    memory_limit_mb  INT          NOT NULL DEFAULT 256, -- 메모리 제한(MB)
+    expected_complexity VARCHAR(64) NULL,               -- 예상 시간복잡도(없으면 NULL)
     submission_count BIGINT       NOT NULL DEFAULT 0,
     accepted_count   BIGINT       NOT NULL DEFAULT 0,
     solver_count     BIGINT       NOT NULL DEFAULT 0,
+    discussion_count INT          NOT NULL DEFAULT 0,   -- 토론 글 수
     CONSTRAINT fk_problem_season FOREIGN KEY (season_id) REFERENCES season (id)
 );
 
