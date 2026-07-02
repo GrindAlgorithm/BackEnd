@@ -1,9 +1,7 @@
 package com.example.springboot.notice.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -13,11 +11,10 @@ import java.time.LocalDateTime;
  * 공지. MVP는 별도 공지 CRUD 없이 시드 데이터로 운용(어드민 Deferred B4) — 연동 문서 §2.4.
  */
 @Entity
-@Table(name = "notice")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Table(name = "notice")
 public class NoticeEntity {
 
     @Id
@@ -35,4 +32,8 @@ public class NoticeEntity {
 
     @Column(nullable = false)
     private boolean highlight;
+
+    public static NoticeEntity createNoticeEntity(String tag, String title, LocalDateTime publishedAt, boolean highlight) {
+        return new NoticeEntity(null, tag, title, publishedAt, highlight);
+    }
 }

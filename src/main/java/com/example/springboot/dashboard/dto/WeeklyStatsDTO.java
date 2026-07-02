@@ -2,9 +2,13 @@ package com.example.springboot.dashboard.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** 이번주 통계 — 연동 문서 §2.4 dashboard.weekly (WeeklyStats) */
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class WeeklyStatsDTO {
     private int solvedCount;

@@ -4,9 +4,13 @@ import com.example.springboot.problem.dto.TierRankDTO;
 import com.example.springboot.problem.entity.ProblemEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** 오늘의 추천 — 연동 문서 §2.4 dashboard.todayPicks[] (TodayPick) */
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class TodayPickDTO {
     private String problemId;

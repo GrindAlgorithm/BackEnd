@@ -3,7 +3,7 @@ package com.example.springboot.dashboard.service;
 import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import com.example.springboot.dashboard.dto.*;
-import com.example.springboot.notice.dto.NoticeResponseDTO;
+import com.example.springboot.notice.dto.NoticeDTO;
 import com.example.springboot.notice.repository.NoticeRepository;
 import com.example.springboot.problem.dto.TierRankDTO;
 import com.example.springboot.problem.entity.ProblemEntity;
@@ -23,7 +23,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional(readOnly = true)
+@Transactional
 public class DashboardServiceImpl implements DashboardService {
 
     private static final int MAX_TODAY_PICKS = 3;
@@ -37,7 +37,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final NoticeRepository noticeRepository;
 
     @Override
-    public DashboardResponseDTO getDashboard() {
+    public DashboardDTO getDashboard() {
         LocalDate today = LocalDate.now();
         SeasonEntity currentSeason = seasonRepository
                 .findFirstByStatusOrderByIdDesc(SeasonStatus.CURRENT)
@@ -47,11 +47,11 @@ public class DashboardServiceImpl implements DashboardService {
                 ? List.of()
                 : problemRepository.findBySeason_IdOrderByDisplayNoAsc(currentSeason.getId());
 
-        List<NoticeResponseDTO> notices = noticeRepository.findAllByOrderByPublishedAtDesc().stream()
-                .map(NoticeResponseDTO::of)
+        List<NoticeDTO> notices = noticeRepository.findAllByOrderByPublishedAtDesc().stream()
+                .map(NoticeDTO::of)
                 .toList();
 
-        return new DashboardResponseDTO(
+        return new DashboardDTO(
                 null,                                   // decay: 하락 공식 미확정(A1) → null
                 buildTodayPicks(seasonProblems),
                 buildNearbyRankingStub(),

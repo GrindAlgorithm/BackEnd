@@ -4,9 +4,7 @@ import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import com.example.springboot.season.entity.SeasonEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -14,11 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "problem")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Table(name = "problem")
 public class ProblemEntity {
 
     @Id
@@ -51,19 +48,22 @@ public class ProblemEntity {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "problem_tag", joinColumns = @JoinColumn(name = "problem_id"))
     @Column(name = "tag", nullable = false, length = 64)
-    @Builder.Default
     private List<String> tags = new ArrayList<>();
 
     // 정답률(acceptanceRate) 계산용 누적 통계 — 연동 문서 §2.7 stats
     @Column(name = "submission_count", nullable = false)
-    @Builder.Default
-    private long submissionCount = 0L;
+    private long submissionCount;
 
     @Column(name = "accepted_count", nullable = false)
-    @Builder.Default
-    private long acceptedCount = 0L;
+    private long acceptedCount;
 
     @Column(name = "solver_count", nullable = false)
-    @Builder.Default
-    private long solverCount = 0L;
+    private long solverCount;
+
+    public static ProblemEntity createProblemEntity(String problemId, String displayNo, String title,
+                                                    TierName tierName, TierLevel tierLevel, SeasonEntity season,
+                                                    List<String> tags, long submissionCount, long acceptedCount, long solverCount) {
+        return new ProblemEntity(null, problemId, displayNo, title, tierName, tierLevel, season,
+                tags, submissionCount, acceptedCount, solverCount);
+    }
 }

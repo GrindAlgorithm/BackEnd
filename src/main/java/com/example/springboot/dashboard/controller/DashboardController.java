@@ -23,7 +23,7 @@ public class DashboardController {
      */
     @GetMapping("")
     public ResponseResult<DashboardResponseDTO> getDashboard() {
-        DashboardResponseDTO dashboard = dashboardService.getDashboard();
+        DashboardResponseDTO dashboard = DashboardResponseDTO.of(dashboardService.getDashboard());
 
         if (log.isInfoEnabled()) {
             log.info("getDashboard Controller Success : todayPicks={}, notices={}",

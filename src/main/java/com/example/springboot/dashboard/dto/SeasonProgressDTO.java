@@ -4,12 +4,16 @@ import com.example.springboot.season.entity.SeasonEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /** 시즌 정보(홈) — 연동 문서 §2.4 dashboard.season (SeasonProgress) */
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class SeasonProgressDTO {
     private Integer seasonId;

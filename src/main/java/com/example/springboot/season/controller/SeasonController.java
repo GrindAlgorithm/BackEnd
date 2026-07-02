@@ -24,7 +24,9 @@ public class SeasonController {
     /** GET /api/v1/seasons — 시즌 목록 (연동 문서 §2.5) */
     @GetMapping("")
     public ResponseResult<List<SeasonResponseDTO>> getSeasons() {
-        List<SeasonResponseDTO> seasons = seasonService.getSeasons();
+        List<SeasonResponseDTO> seasons = seasonService.getSeasons().stream()
+                .map(SeasonResponseDTO::of)
+                .toList();
 
         if (log.isInfoEnabled()) {
             log.info("getSeasons Controller Success : {} seasons", seasons.size());
@@ -35,7 +37,9 @@ public class SeasonController {
     /** GET /api/v1/seasons/{seasonId}/problems — 시즌 문제 목록 (연동 문서 §2.6) */
     @GetMapping("/{seasonId}/problems")
     public ResponseResult<List<ProblemSummaryResponseDTO>> getSeasonProblems(@PathVariable Integer seasonId) {
-        List<ProblemSummaryResponseDTO> problems = seasonService.getSeasonProblems(seasonId);
+        List<ProblemSummaryResponseDTO> problems = seasonService.getSeasonProblems(seasonId).stream()
+                .map(ProblemSummaryResponseDTO::of)
+                .toList();
 
         if (log.isInfoEnabled()) {
             log.info("getSeasonProblems Controller Success : seasonId={}, {} problems", seasonId, problems.size());

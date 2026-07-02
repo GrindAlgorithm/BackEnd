@@ -2,6 +2,8 @@ package com.example.springboot.dashboard.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -9,6 +11,8 @@ import java.util.List;
 
 /** 이번 시즌 활동(잔디) — 연동 문서 §2.4 dashboard.seasonActivity (ActivityCalendar) */
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class ActivityCalendarDTO {
 

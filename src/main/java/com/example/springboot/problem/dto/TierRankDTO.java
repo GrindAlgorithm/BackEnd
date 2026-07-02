@@ -4,9 +4,13 @@ import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** 연동 문서 §1.6 TierRank = { name, level } */
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class TierRankDTO {
     private String name;  // "gold"

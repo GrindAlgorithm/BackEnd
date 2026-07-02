@@ -1,16 +1,15 @@
 package com.example.springboot.season.dto;
 
-import com.example.springboot.season.entity.SeasonEntity;
-import com.example.springboot.season.entity.SeasonStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** 연동 문서 §2.5 GET /seasons 응답 항목 (SeasonSummary) */
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class SeasonResponseDTO {
     private Integer id;
@@ -25,17 +24,14 @@ public class SeasonResponseDTO {
     @JsonProperty("dDay")
     private Long dDay;
 
-    public static SeasonResponseDTO of(SeasonEntity season, LocalDate today) {
-        Long dDay = season.getStatus() == SeasonStatus.CURRENT
-                ? ChronoUnit.DAYS.between(today, season.getEndDate())
-                : null;
+    public static SeasonResponseDTO of(SeasonDTO season) {
         return new SeasonResponseDTO(
                 season.getId(),
                 season.getName(),
                 season.getStartDate().toString(),
                 season.getEndDate().toString(),
                 season.getStatus().getValue(),
-                dDay
+                season.getDDay()
         );
     }
 }

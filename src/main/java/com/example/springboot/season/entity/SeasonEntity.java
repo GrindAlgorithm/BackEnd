@@ -1,20 +1,17 @@
 package com.example.springboot.season.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "season")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Table(name = "season")
 public class SeasonEntity {
 
     @Id
@@ -33,4 +30,8 @@ public class SeasonEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private SeasonStatus status;
+
+    public static SeasonEntity createSeasonEntity(String name, LocalDate startDate, LocalDate endDate, SeasonStatus status) {
+        return new SeasonEntity(null, name, startDate, endDate, status);
+    }
 }
