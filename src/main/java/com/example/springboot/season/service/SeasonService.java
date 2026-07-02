@@ -10,6 +10,9 @@ public interface SeasonService {
     /** 시즌 목록 (문제 목록 화면 탭) — 연동 문서 §2.5 */
     public List<SeasonDTO> getSeasons();
 
+    /** 시즌 단건 기간 정보 (없으면 null) — 문제 탭 시즌 정보 */
+    public SeasonDTO getSeason(Integer seasonId);
+
     /** 특정 시즌의 문제 목록 — 연동 문서 §2.6 */
     public List<ProblemSummaryDTO> getSeasonProblems(Integer seasonId);
 }

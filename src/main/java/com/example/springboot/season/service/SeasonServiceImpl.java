@@ -30,6 +30,13 @@ public class SeasonServiceImpl implements SeasonService {
     }
 
     @Override
+    public SeasonDTO getSeason(Integer seasonId) {
+        return seasonRepository.findById(seasonId)
+                .map(season -> SeasonDTO.of(season, LocalDate.now()))
+                .orElse(null);
+    }
+
+    @Override
     public List<ProblemSummaryDTO> getSeasonProblems(Integer seasonId) {
         return problemRepository.findBySeason_IdOrderByDisplayNoAsc(seasonId).stream()
                 .map(ProblemSummaryDTO::of)

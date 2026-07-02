@@ -1,6 +1,7 @@
 package com.example.springboot.season.controller;
 
 import com.example.springboot.problem.dto.ProblemSummaryResponseDTO;
+import com.example.springboot.season.dto.SeasonDTO;
 import com.example.springboot.season.dto.SeasonResponseDTO;
 import com.example.springboot.season.service.SeasonService;
 import com.example.springboot.util.ResponseResult;
@@ -32,6 +33,20 @@ public class SeasonController {
             log.info("getSeasons Controller Success : {} seasons", seasons.size());
         }
         return ResponseResult.success(seasons);
+    }
+
+    /** GET /api/v1/seasons/{seasonId} — 시즌 단건 기간 정보 (문제 탭 시즌 정보) */
+    @GetMapping("/{seasonId}")
+    public ResponseResult<SeasonResponseDTO> getSeason(@PathVariable Integer seasonId) {
+        SeasonDTO season = seasonService.getSeason(seasonId);
+        if (season == null) {
+            return ResponseResult.<SeasonResponseDTO>error(null);
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("getSeason Controller Success : seasonId={}", seasonId);
+        }
+        return ResponseResult.success(SeasonResponseDTO.of(season));
     }
 
     /** GET /api/v1/seasons/{seasonId}/problems — 시즌 문제 목록 (연동 문서 §2.6) */
