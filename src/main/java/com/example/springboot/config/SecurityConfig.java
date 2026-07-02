@@ -34,7 +34,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/example",
                                 // 문제목록(시즌/시즌 문제) — 미로그인 열람 허용(연동 문서 §2.6)
-                                "/api/v1/seasons/**"
+                                "/api/v1/seasons/**",
+                                // 홈 대시보드 — 인증 연동 전까지 접근 허용(추후 authenticated 로 전환)
+                                "/api/v1/dashboard"
                         ).permitAll()
                         .anyRequest().authenticated());
 

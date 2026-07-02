@@ -9,4 +9,7 @@ public interface ProblemRepository extends JpaRepository<ProblemEntity, Long> {
 
     /** 특정 시즌의 문제 목록 (번호 순) */
     List<ProblemEntity> findBySeason_IdOrderByDisplayNoAsc(Integer seasonId);
+
+    /** 특정 시즌의 문제 수 (시즌 진행률 totalCount) */
+    long countBySeason_Id(Integer seasonId);
 }
