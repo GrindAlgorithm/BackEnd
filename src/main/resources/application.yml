@@ -4,11 +4,9 @@ server:
   port: 8080
 
 spring:
-  datasource:
-    url: jdbc:mysql://bbaek2.synology.me:3306/example
-    username: root
-    password: 1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  # 프로필 미지정 시 local 사용 — DB 접속 정보는 application-{profile}.yml 에만 둔다 (여기에 두지 말 것)
+  profiles:
+    default: local
   jpa:
     show-sql: true
     generate-ddl: false
