@@ -4,15 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Backend for **GrindAlgorithm** — a 백준(Baekjoon)-style, season-based competitive coding-judge site. Spring Boot 3.3.3 · Java 17 · Spring Data JPA / MySQL · Spring Security · QueryDSL. The frontend is a **separate repo** at `../FrontEnd` (Vite + React + TS).
+Backend for **GrindAlgorithm** — a 백준(Baekjoon)-style, season-based competitive coding-judge site. Spring Boot 3.3.3 · Java 17 · Spring Data JPA / MariaDB 11.8 LTS · Spring Security · QueryDSL. The frontend is a **separate repo** at `../FrontEnd` (Vite + React + TS).
 
 Current state: this is a **scaffold**. Only the `example` feature exists — it is the canonical template to copy when building real features. The real API surface (problems, submissions, seasons, rankings, OAuth2, etc.) is **specified but not yet implemented**; the spec lives in the frontend (see "Frontend contract" below).
 
 ## Commands
 
 ```bash
+docker compose up -d     # local MariaDB 11.8 (first boot auto-applies src/main/resources/db/*.sql)
 ./gradlew build          # compile + test + generate QueryDSL Q-classes
-./gradlew bootRun        # run app on http://localhost:8080
+./gradlew bootRun        # run app on http://localhost:8080 (default profile: local)
 ./gradlew test           # run all tests (JUnit 5)
 ./gradlew test --tests 'com.example.springboot.SpringbootApplicationTests'   # single test class
 ./gradlew test --tests '*.SpringbootApplicationTests.contextLoads'           # single test method
@@ -60,10 +61,11 @@ All controller responses wrap the payload in `ResponseResult<T>` (`util/Response
 
 > Known gaps to be aware of: (1) CORS origin is `localhost:3000`, but the frontend dev server runs on `5173` (and proxies `/api`, `/oauth2`) — align this when doing cross-origin work. (2) OAuth2 (GitHub/Google) and session-cookie auth are required by the contract but **not yet configured** here.
 
-### Persistence (`src/main/resources/application.yml`)
+### Persistence (`src/main/resources/application.yml` + profiles)
 
-- MySQL via JPA/Hibernate. `hibernate.ddl-auto: none` and `generate-ddl: false` — **the schema is managed externally, not generated from entities.** When you add/change an entity, also update the DB schema by hand.
-- `show-sql: true`. DB connection (host/credentials) is hardcoded in `application.yml`.
+- MariaDB 11.8 LTS via JPA/Hibernate. `hibernate.ddl-auto: none` and `generate-ddl: false` — **the schema is managed externally, not generated from entities.** When you add/change an entity, also update `src/main/resources/db/*.sql` and the DB by hand.
+- `show-sql: true`. DB connection lives **only** in profile files: `application-local.yml` (gitignored; copy from `application-local.yml.example`). `spring.profiles.default: local`, so plain `bootRun` uses it.
+- Local DB runs in Docker: `docker compose up -d` (MariaDB 11.8, db `example`, auto-inits from `src/main/resources/db/` on first volume creation; `docker compose down -v` to re-seed).
 
 ## Frontend contract — the source of truth for the real API
 
