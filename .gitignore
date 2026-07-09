@@ -1,0 +1,10 @@
+# 로컬 환경변수/프로필 — 커밋 금지 (템플릿: application-local.yml.example)
+src/main/resources/application-local.yml
+.env
+
+# 빌드 산출물 / IDE
+# (build/, .gradle/ 일부가 이미 커밋돼 있음 — `git rm -r --cached build .gradle` 실행해야 실제로 제외됨)
+build/
+.gradle/
+.idea/
+out/
