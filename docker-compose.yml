@@ -1,0 +1,36 @@
+# 로컬 개발용 DB — MariaDB 11.8 LTS
+# 사용: docker compose up -d
+# 최초 기동 시 src/main/resources/db/ 의 스키마/시드가 자동 적용된다(볼륨 초기화 후에만).
+# 초기화 다시 하려면: docker compose down -v && docker compose up -d
+services:
+  mariadb:
+    image: mariadb:11.8
+    container_name: grind-algorithm-db
+    ports:
+      # 호스트 3306은 로컬 MySQL이 점유하는 경우가 있어 13306 사용 (application-local.yml url과 일치)
+      - "13306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: local-root
+      MARIADB_DATABASE: example          # application-local.yml 의 datasource url과 일치
+      MARIADB_USER: grind
+      MARIADB_PASSWORD: grind-local
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      # 초기화 스크립트는 파일별로 순서(번호 prefix)를 지정해 마운트한다.
+      # 디렉터리 통 마운트는 금지 — *-migration.sql(기존 DB용)이 알파벳 순으로
+      # 스키마보다 먼저 실행돼 fresh 초기화가 깨진다. 백엔드에 스키마/시드가
+      # 추가되면 여기에 한 줄씩 추가할 것 (FK 의존 순서 주의).
+      - ./src/main/resources/db/problem-list-schema.sql:/docker-entrypoint-initdb.d/01-problem-list-schema.sql:ro
+      - ./src/main/resources/db/problem-list-seed.sql:/docker-entrypoint-initdb.d/02-problem-list-seed.sql:ro
+      - ./src/main/resources/db/notice-schema.sql:/docker-entrypoint-initdb.d/03-notice-schema.sql:ro
+      - ./src/main/resources/db/notice-seed.sql:/docker-entrypoint-initdb.d/04-notice-seed.sql:ro
+      - ./src/main/resources/db/submission-schema.sql:/docker-entrypoint-initdb.d/05-submission-schema.sql:ro
+      - ./src/main/resources/db/submission-seed.sql:/docker-entrypoint-initdb.d/06-submission-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  mariadb-data:
