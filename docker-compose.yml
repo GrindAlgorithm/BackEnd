@@ -26,6 +26,8 @@ services:
       - ./src/main/resources/db/notice-seed.sql:/docker-entrypoint-initdb.d/04-notice-seed.sql:ro
       - ./src/main/resources/db/submission-schema.sql:/docker-entrypoint-initdb.d/05-submission-schema.sql:ro
       - ./src/main/resources/db/submission-seed.sql:/docker-entrypoint-initdb.d/06-submission-seed.sql:ro
+      - ./src/main/resources/db/problem-body-schema.sql:/docker-entrypoint-initdb.d/07-problem-body-schema.sql:ro
+      - ./src/main/resources/db/problem-body-seed.sql:/docker-entrypoint-initdb.d/08-problem-body-seed.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
