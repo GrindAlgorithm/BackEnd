@@ -82,6 +82,18 @@ public class ProblemEntity {
                 timeLimitSec, memoryLimitMb, expectedComplexity, submissionCount, acceptedCount, solverCount, discussionCount);
     }
 
+    /**
+     * 채점 완료 시 통계 갱신. 제출 수는 항상 +1, 정답이면 정답 수·맞힌 사람 수도 +1.
+     * (유저 도메인 연동 전이라 맞힌 사람 중복 제거는 생략 — accepted마다 solver_count 증가)
+     */
+    public void recordSubmission(boolean accepted) {
+        this.submissionCount++;
+        if (accepted) {
+            this.acceptedCount++;
+            this.solverCount++;
+        }
+    }
+
     /** 정답 비율 (%, 소수 첫째 자리). 제출 없으면 0 — 연동 문서 §2.6/§2.7 */
     public double acceptanceRate() {
         if (submissionCount <= 0) {

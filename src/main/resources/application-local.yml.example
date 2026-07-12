@@ -7,3 +7,12 @@ spring:
     username: grind
     password: grind-local
     driver-class-name: org.mariadb.jdbc.Driver
+
+# Judge0 채점 엔진 (연동 문서 §3, B3 — 클라이언트에 직접 노출 금지)
+# client=stub(기본): 실제 Judge0 없이 채점 파이프라인 동작(로컬 시뮬레이션, 진짜 채점 아님)
+# client=real: 실제 Judge0로 채점. docker-compose.judge0.yml 로 Judge0를 띄운 뒤 아래를 활성화.
+judge0:
+  client: stub
+  # client: real
+  # base-url: http://localhost:2358
+  # auth-token: ""          # Judge0 인증 토큰 사용 시

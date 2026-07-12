@@ -59,4 +59,26 @@ public class SubmissionEntity {
                                                           LanguageCode language, int codeBytes, LocalDateTime submittedAt) {
         return new SubmissionEntity(null, problem, userHandle, status, progress, timeMs, memoryKb, language, codeBytes, submittedAt);
     }
+
+    /** 채점 시작: 상태 JUDGING, 진행률 0 */
+    public void startJudging() {
+        this.status = SubmissionStatus.JUDGING;
+        this.progress = 0;
+    }
+
+    /** 채점 진행 갱신 (테스트케이스 진행률 %) */
+    public void updateProgress(int progress, Long timeMs, Long memoryKb) {
+        this.status = SubmissionStatus.JUDGING;
+        this.progress = progress;
+        this.timeMs = timeMs;
+        this.memoryKb = memoryKb;
+    }
+
+    /** 채점 종결: 종결 상태, 진행률 null, 시간/메모리 확정 */
+    public void finish(SubmissionStatus status, Long timeMs, Long memoryKb) {
+        this.status = status;
+        this.progress = null;
+        this.timeMs = timeMs;
+        this.memoryKb = memoryKb;
+    }
 }

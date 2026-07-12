@@ -1,0 +1,55 @@
+# Judge0 self-host 채점 엔진 (연동 문서 §3, 스펙 Key Decision B3)
+# 사용: docker compose -f docker-compose.judge0.yml up -d
+# 그 뒤 application-local.yml 에서 judge0.client=real, base-url=http://localhost:2358 로 전환.
+#
+# ⚠ 환경 요구사항 — isolate 샌드박스는 Linux cgroup v1 + privileged 필요.
+#   현재 개발 VM(colima)은 cgroup v2(unified)라 이 스택은 샌드박스 기동에 실패할 수 있다.
+#   해결: cgroup v1 호스트에서 실행하거나, colima 를 cgroup v1로 재생성
+#   (colima delete && colima start --kernel-arg systemd.unified_cgroup_hierarchy=0 등, 환경별 상이).
+#   로컬에서 Judge0를 못 띄우면 judge0.client=stub(기본)으로 파이프라인만 검증한다.
+#
+# 참고: Judge0 는 반드시 백엔드(:8080) 뒤에 두고 클라이언트에 직접 노출하지 않는다(B3).
+services:
+  judge0-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0-local
+      POSTGRES_DB: judge0
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data
+
+  judge0-redis:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "no"]
+
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    ports:
+      - "2358:2358"
+    privileged: true
+    environment: &judge0-env
+      REDIS_HOST: judge0-redis
+      REDIS_PORT: "6379"
+      POSTGRES_HOST: judge0-db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0-local
+    restart: unless-stopped
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    privileged: true
+    environment: *judge0-env
+    restart: unless-stopped
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+volumes:
+  judge0-db-data:
