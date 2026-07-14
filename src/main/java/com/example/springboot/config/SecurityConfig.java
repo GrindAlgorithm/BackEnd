@@ -43,7 +43,9 @@ public class SecurityConfig {
                                 "/api/v1/runs/**",
                                 // 문제 상세(본문 미포함) — 연동 문서 §2.7.
                                 // ⚠ 추후 POST /problems/{id}/open(본문) 추가 시 GET만 허용하도록 좁힐 것
-                                "/api/v1/problems/**"
+                                "/api/v1/problems/**",
+                                // 랭킹 탭 — 연동 문서 §2.13
+                                "/api/v1/rankings/**"
                         ).permitAll()
                         .anyRequest().authenticated());
 
