@@ -1,3 +1,4 @@
+
 # 로컬 개발 프로필 템플릿 — 이 파일을 application-local.yml 로 복사해서 사용.
 # application-local.yml 은 .gitignore 대상이라 커밋되지 않는다.
 # 값은 docker-compose.yml 의 MariaDB 컨테이너 설정과 일치해야 한다.
@@ -10,9 +11,23 @@ spring:
 
 # Judge0 채점 엔진 (연동 문서 §3, B3 — 클라이언트에 직접 노출 금지)
 # client=stub(기본): 실제 Judge0 없이 채점 파이프라인 동작(로컬 시뮬레이션, 진짜 채점 아님)
-# client=real: 실제 Judge0로 채점. docker-compose.judge0.yml 로 Judge0를 띄운 뒤 아래를 활성화.
+# client=real: 실제 Judge0로 채점.
 judge0:
   client: stub
+
+  # ── (A) 외부 호스팅 Judge0 — RapidAPI Judge0 CE ──────────────────────────
+  # RapidAPI(https://rapidapi.com/judge0-official/api/judge0-ce)에서 키를 발급받아 아래를 활성화.
+  # 공용 인스턴스는 wait=true 를 막으므로 반드시 wait: false(폴링) 로 둔다.
+  # client: real
+  # base-url: https://judge0-ce.p.rapidapi.com
+  # wait: false
+  # headers:
+  #   X-RapidAPI-Key: "여기에_RapidAPI_키"
+  #   X-RapidAPI-Host: judge0-ce.p.rapidapi.com
+
+  # ── (B) 자체 원격/로컬 Judge0 (docker-compose.judge0.yml) ────────────────
+  # self-host 는 wait=true(동기) 가능. isolate 샌드박스는 cgroup v1 호스트 필요.
   # client: real
   # base-url: http://localhost:2358
-  # auth-token: ""          # Judge0 인증 토큰 사용 시
+  # wait: true
+  # auth-token: ""          # AUTHN_TOKEN 설정 시
