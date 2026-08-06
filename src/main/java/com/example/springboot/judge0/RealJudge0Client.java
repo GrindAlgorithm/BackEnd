@@ -1,9 +1,12 @@
 package com.example.springboot.judge0;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -29,10 +32,19 @@ public class RealJudge0Client implements Judge0Client {
 
     private final RestClient restClient;
     private final Judge0Properties props;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RealJudge0Client(Judge0Properties props) {
         this.props = props;
-        RestClient.Builder builder = RestClient.builder().baseUrl(props.getBaseUrl());
+        // Judge0 서버는 chunked 전송 인코딩의 요청 본문을 읽지 못해 본문을 빈 값으로
+        // 인식(422 source_code blank)한다. 두 가지를 함께 적용해 chunked 를 없앤다:
+        // 1) HttpURLConnection 팩토리로 JDK HttpClient 의 h2c 업그레이드를 회피.
+        // 2) 본문을 byte[] 로 미리 직렬화해 전달 → Content-Length 가 설정되어
+        //    HttpURLConnection 이 fixed-length 모드로 전송(chunked 아님, curl 과 동일).
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        RestClient.Builder builder = RestClient.builder()
+                .baseUrl(props.getBaseUrl())
+                .requestFactory(requestFactory);
         if (props.getAuthToken() != null && !props.getAuthToken().isBlank()) {
             builder.defaultHeader("X-Auth-Token", props.getAuthToken());
         }
@@ -58,7 +70,8 @@ public class RealJudge0Client implements Judge0Client {
         body.put("cpu_time_limit", request.cpuTimeLimitSec());
         body.put("memory_limit", request.memoryLimitKb());
 
-        Judge0Response res = props.isWait() ? submitAndWait(body) : submitAndPoll(body);
+        byte[] payload = toJson(body);
+        Judge0Response res = props.isWait() ? submitAndWait(payload) : submitAndPoll(payload);
 
         if (res == null || res.status == null) {
             log.warn("[judge0] 빈 응답 — INTERNAL_ERROR 처리");
@@ -71,28 +84,37 @@ public class RealJudge0Client implements Judge0Client {
         return new Judge0Execution(verdict, decode(res.stdout), stderr, timeMs, res.memory, res.exitCode);
     }
 
+    /** Map → JSON byte[] (Content-Length 설정을 위해 미리 직렬화). */
+    private byte[] toJson(Map<String, Object> body) {
+        try {
+            return objectMapper.writeValueAsBytes(body);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Judge0 요청 직렬화 실패", e);
+        }
+    }
+
     /** wait=true: POST 한 번으로 완료 결과를 받는다. */
-    private Judge0Response submitAndWait(Map<String, Object> body) {
+    private Judge0Response submitAndWait(byte[] payload) {
         return restClient.post()
                 .uri(uri -> uri.path("/submissions")
                         .queryParam("base64_encoded", true)
                         .queryParam("wait", true)
                         .build())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
+                .body(payload)
                 .retrieve()
                 .body(Judge0Response.class);
     }
 
     /** wait=false: 토큰을 받은 뒤 status.id 가 큐/처리중(1,2)을 벗어날 때까지 GET 폴링. */
-    private Judge0Response submitAndPoll(Map<String, Object> body) {
+    private Judge0Response submitAndPoll(byte[] payload) {
         Judge0Response created = restClient.post()
                 .uri(uri -> uri.path("/submissions")
                         .queryParam("base64_encoded", true)
                         .queryParam("wait", false)
                         .build())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
+                .body(payload)
                 .retrieve()
                 .body(Judge0Response.class);
 
@@ -133,7 +155,9 @@ public class RealJudge0Client implements Judge0Client {
         if (b64 == null) {
             return null;
         }
-        return new String(Base64.getDecoder().decode(b64), StandardCharsets.UTF_8);
+        // Judge0 는 base64 응답에 개행을 섞어 보낸다(예: "MQo=\n"). 표준 디코더는 개행을
+        // 거부하므로, 공백/개행을 무시하는 MIME 디코더를 쓴다.
+        return new String(Base64.getMimeDecoder().decode(b64), StandardCharsets.UTF_8);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
