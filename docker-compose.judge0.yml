@@ -36,6 +36,8 @@ services:
       POSTGRES_DB: judge0
       POSTGRES_USER: judge0
       POSTGRES_PASSWORD: judge0-local
+      # 문제 메모리 제한 최대 512MB(524288KB) 수용 — 기본값 512000KB 는 512MB 미만이라 422 거부됨.
+      MAX_MEMORY_LIMIT: "524288"
     restart: unless-stopped
     depends_on:
       - judge0-db
