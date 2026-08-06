@@ -32,45 +32,55 @@ public class SubmissionGrader {
     @Async
     public void grade(long submissionId, String problemId, int judge0LangId,
                       int cpuTimeLimitSec, int memoryLimitKb, String sourceCode) {
-        tx.markJudging(submissionId);
-
-        List<ProblemSampleEntity> tests = problemSampleRepository.findByProblem_ProblemIdOrderByOrdinalAsc(problemId);
-        if (tests.isEmpty()) {
-            tx.finishAccepted(submissionId, 0L, 0L);
-            return;
-        }
-
         long maxTimeMs = 0;
         long maxMemoryKb = 0;
-        int total = tests.size();
-        int done = 0;
+        try {
+            tx.markJudging(submissionId);
 
-        for (ProblemSampleEntity test : tests) {
-            Judge0Execution exec = judge0Client.execute(new Judge0ExecRequest(
-                    judge0LangId, sourceCode, test.getInput(), test.getOutput(),
-                    cpuTimeLimitSec, memoryLimitKb));
-            done++;
-            if (exec.timeMs() != null) {
-                maxTimeMs = Math.max(maxTimeMs, exec.timeMs());
-            }
-            if (exec.memoryKb() != null) {
-                maxMemoryKb = Math.max(maxMemoryKb, exec.memoryKb());
-            }
-
-            if (exec.verdict() != Judge0Verdict.ACCEPTED) {
-                tx.finishFailed(submissionId, toStatus(exec.verdict()), maxTimeMs, maxMemoryKb);
-                if (log.isInfoEnabled()) {
-                    log.info("grade done submissionId={} verdict={} at case {}/{}",
-                            submissionId, exec.verdict(), done, total);
-                }
+            List<ProblemSampleEntity> tests = problemSampleRepository.findByProblem_ProblemIdOrderByOrdinalAsc(problemId);
+            if (tests.isEmpty()) {
+                tx.finishAccepted(submissionId, 0L, 0L);
                 return;
             }
-            tx.updateProgress(submissionId, (int) (done * 100L / total), maxTimeMs, maxMemoryKb);
-        }
 
-        tx.finishAccepted(submissionId, maxTimeMs, maxMemoryKb);
-        if (log.isInfoEnabled()) {
-            log.info("grade done submissionId={} ACCEPTED ({} cases)", submissionId, total);
+            int total = tests.size();
+            int done = 0;
+
+            for (ProblemSampleEntity test : tests) {
+                Judge0Execution exec = judge0Client.execute(new Judge0ExecRequest(
+                        judge0LangId, sourceCode, test.getInput(), test.getOutput(),
+                        cpuTimeLimitSec, memoryLimitKb));
+                done++;
+                if (exec.timeMs() != null) {
+                    maxTimeMs = Math.max(maxTimeMs, exec.timeMs());
+                }
+                if (exec.memoryKb() != null) {
+                    maxMemoryKb = Math.max(maxMemoryKb, exec.memoryKb());
+                }
+
+                if (exec.verdict() != Judge0Verdict.ACCEPTED) {
+                    tx.finishFailed(submissionId, toStatus(exec.verdict()), maxTimeMs, maxMemoryKb);
+                    if (log.isInfoEnabled()) {
+                        log.info("grade done submissionId={} verdict={} at case {}/{}",
+                                submissionId, exec.verdict(), done, total);
+                    }
+                    return;
+                }
+                tx.updateProgress(submissionId, (int) (done * 100L / total), maxTimeMs, maxMemoryKb);
+            }
+
+            tx.finishAccepted(submissionId, maxTimeMs, maxMemoryKb);
+            if (log.isInfoEnabled()) {
+                log.info("grade done submissionId={} ACCEPTED ({} cases)", submissionId, total);
+            }
+        } catch (Exception e) {
+            // Judge0 통신/한도 초과(422) 등 예외 시 제출을 JUDGING 에 방치하지 않고 종결한다.
+            log.error("grade failed submissionId={} — 채점 오류로 RUNTIME_ERROR 종결", submissionId, e);
+            try {
+                tx.finishFailed(submissionId, SubmissionStatus.RUNTIME_ERROR, maxTimeMs, maxMemoryKb);
+            } catch (Exception ex) {
+                log.error("grade 실패 종결마저 실패 submissionId={}", submissionId, ex);
+            }
         }
     }
 
