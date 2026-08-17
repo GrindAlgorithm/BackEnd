@@ -56,6 +56,8 @@ public class SecurityConfig {
                                 // 랭킹 탭 — 연동 문서 §2.13
                                 "/api/v1/rankings/**"
                         ).permitAll()
+                        // 관리자 전용 — 공지 작성 등(요건 3). ADMIN 권한 필요
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
 
         return http.build();

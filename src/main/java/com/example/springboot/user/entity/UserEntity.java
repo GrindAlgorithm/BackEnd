@@ -32,15 +32,24 @@ public class UserEntity {
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private UserRole role;
+
     @Column(name = "selected_title_id", length = 32)
     private String selectedTitleId;
 
     @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
 
-    /** 신규 가입 — 칭호는 미선택(null). */
+    /** 신규 가입 — 일반 유저(USER), 칭호는 미선택(null). */
     public static UserEntity createUserEntity(String handle, String email, String passwordHash, LocalDateTime joinedAt) {
-        return new UserEntity(null, handle, email, passwordHash, null, joinedAt);
+        return new UserEntity(null, handle, email, passwordHash, UserRole.USER, null, joinedAt);
+    }
+
+    /** 관리자 계정(시더 전용). */
+    public static UserEntity createAdminEntity(String handle, String email, String passwordHash, LocalDateTime joinedAt) {
+        return new UserEntity(null, handle, email, passwordHash, UserRole.ADMIN, null, joinedAt);
     }
 
     /** 대표 칭호 변경 (PUT /me/title) */

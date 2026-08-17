@@ -14,6 +14,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class MeResponseDTO {
     private String handle;
+    private String role;          // USER | ADMIN — 프론트 관리자 탭 노출 판단용
     private String joinedAt;      // ISO 8601
     private Object seasonTier;    // TierRank {name, level} | null — 현재 항상 null(미배치)
     private int seasonScore;
@@ -24,6 +25,7 @@ public class MeResponseDTO {
     public static MeResponseDTO of(UserDTO user) {
         return new MeResponseDTO(
                 user.getHandle(),
+                user.getRole().name(),
                 user.getJoinedAt().toString(),
                 null,
                 0,

@@ -1,6 +1,7 @@
 package com.example.springboot.user.dto;
 
 import com.example.springboot.user.entity.UserEntity;
+import com.example.springboot.user.entity.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,7 @@ public class UserDTO {
     private Long id;
     private String handle;
     private String email;
+    private UserRole role;
     private String selectedTitleId;
     private LocalDateTime joinedAt;
 
@@ -25,6 +27,7 @@ public class UserDTO {
                 entity.getId(),
                 entity.getHandle(),
                 entity.getEmail(),
+                entity.getRole(),
                 entity.getSelectedTitleId(),
                 entity.getJoinedAt());
     }

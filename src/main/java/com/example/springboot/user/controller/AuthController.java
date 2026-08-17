@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
@@ -21,7 +22,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
+import java.util.List;
 
 /**
  * 인증 — 자체 이메일 로그인/회원가입/로그아웃/내 정보 (연동 문서 §2.1~2.3 + signup).
@@ -41,7 +42,7 @@ public class AuthController {
     public ResponseResult<MeResponseDTO> signup(@Valid @RequestBody SignupRequestDTO request,
                                                 HttpServletRequest req, HttpServletResponse res) {
         UserDTO user = authService.signup(request);
-        establishSession(user.getEmail(), req, res);
+        establishSession(user, req, res);
         return ResponseResult.success(MeResponseDTO.of(user));
     }
 
@@ -50,7 +51,7 @@ public class AuthController {
     public ResponseResult<MeResponseDTO> login(@Valid @RequestBody LoginRequestDTO request,
                                                HttpServletRequest req, HttpServletResponse res) {
         UserDTO user = authService.login(request);
-        establishSession(user.getEmail(), req, res);
+        establishSession(user, req, res);
 
         if (log.isInfoEnabled()) {
             log.info("login success handle={}", user.getHandle());
@@ -73,9 +74,13 @@ public class AuthController {
         return ResponseResult.success(MeResponseDTO.of(user));
     }
 
-    /** 인증 성공 principal(email)을 SecurityContext 에 담아 세션(JSESSIONID)에 저장. */
-    private void establishSession(String email, HttpServletRequest req, HttpServletResponse res) {
-        Authentication auth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+    /**
+     * 인증 성공 principal(email) + 권한(ROLE_xxx)을 SecurityContext 에 담아
+     * 세션(JSESSIONID)에 저장한다. 권한은 SecurityConfig 의 hasRole 인가에 쓰인다.
+     */
+    private void establishSession(UserDTO user, HttpServletRequest req, HttpServletResponse res) {
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, authorities);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
