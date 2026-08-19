@@ -36,4 +36,11 @@ public class NoticeEntity {
     public static NoticeEntity createNoticeEntity(String tag, String title, LocalDateTime publishedAt, boolean highlight) {
         return new NoticeEntity(null, tag, title, publishedAt, highlight);
     }
+
+    /** 관리자 수정 — 게시 시각(publishedAt)은 작성 시점을 유지한다. */
+    public void update(String tag, String title, boolean highlight) {
+        this.tag = tag;
+        this.title = title;
+        this.highlight = highlight;
+    }
 }
