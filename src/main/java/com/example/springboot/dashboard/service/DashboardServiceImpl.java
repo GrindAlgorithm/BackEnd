@@ -8,6 +8,7 @@ import com.example.springboot.notice.repository.NoticeRepository;
 import com.example.springboot.problem.dto.TierRankDTO;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
+import com.example.springboot.recommendation.repository.RecommendationRepository;
 import com.example.springboot.season.entity.SeasonEntity;
 import com.example.springboot.season.entity.SeasonStatus;
 import com.example.springboot.season.repository.SeasonRepository;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -28,13 +28,10 @@ public class DashboardServiceImpl implements DashboardService {
 
     private static final int MAX_TODAY_PICKS = 3;
 
-    // 추천 문구/유형 (추천 로직은 Deferred — MVP는 규칙 기반, 연동 문서 §2.4)
-    private static final String[] PICK_REASONS = {"이어 풀기 좋은 문제", "티어업 후보", "비슷한 난이도"};
-    private static final String[] PICK_REASON_TYPES = {"continue", "tier_up", "similar_level"};
-
     private final SeasonRepository seasonRepository;
     private final ProblemRepository problemRepository;
     private final NoticeRepository noticeRepository;
+    private final RecommendationRepository recommendationRepository;
 
     @Override
     public DashboardDTO getDashboard() {
@@ -53,7 +50,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         return new DashboardDTO(
                 null,                                   // decay: 하락 공식 미확정(A1) → null
-                buildTodayPicks(seasonProblems),
+                buildTodayPicks(),
                 buildNearbyRankingStub(),
                 buildSeasonProgress(currentSeason, seasonProblems, today),
                 WeeklyStatsDTO.empty(),                 // 제출 도메인 연동 전 0
@@ -62,14 +59,12 @@ public class DashboardServiceImpl implements DashboardService {
         );
     }
 
-    /** 오늘의 추천: 현재 시즌 문제 상위 N개를 규칙 기반으로 노출 */
-    private List<TodayPickDTO> buildTodayPicks(List<ProblemEntity> seasonProblems) {
-        List<TodayPickDTO> picks = new ArrayList<>();
-        int count = Math.min(MAX_TODAY_PICKS, seasonProblems.size());
-        for (int i = 0; i < count; i++) {
-            picks.add(TodayPickDTO.of(seasonProblems.get(i), PICK_REASONS[i], PICK_REASON_TYPES[i]));
-        }
-        return picks;
+    /** 오늘의 추천: recommendation 테이블의 추천 순위(rank_no) 순으로 상위 N개 노출 */
+    private List<TodayPickDTO> buildTodayPicks() {
+        return recommendationRepository.findAllByOrderByRankNoAsc().stream()
+                .limit(MAX_TODAY_PICKS)
+                .map(r -> TodayPickDTO.of(r.getProblem(), r.getReason(), r.getReasonType()))
+                .toList();
     }
 
     private SeasonProgressDTO buildSeasonProgress(SeasonEntity season, List<ProblemEntity> problems, LocalDate today) {
