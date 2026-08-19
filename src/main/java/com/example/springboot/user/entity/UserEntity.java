@@ -29,8 +29,13 @@ public class UserEntity {
     @Column(nullable = false, length = 255, unique = true)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 100)
+    /** BCrypt 해시. 소셜(OAuth) 유저는 null. */
+    @Column(name = "password_hash", length = 100)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private AuthProvider provider;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
@@ -42,14 +47,19 @@ public class UserEntity {
     @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
 
-    /** 신규 가입 — 일반 유저(USER), 칭호는 미선택(null). */
+    /** 자체 이메일 신규 가입 — 일반 유저(USER), 칭호는 미선택(null). */
     public static UserEntity createUserEntity(String handle, String email, String passwordHash, LocalDateTime joinedAt) {
-        return new UserEntity(null, handle, email, passwordHash, UserRole.USER, null, joinedAt);
+        return new UserEntity(null, handle, email, passwordHash, AuthProvider.LOCAL, UserRole.USER, null, joinedAt);
     }
 
     /** 관리자 계정(시더 전용). */
     public static UserEntity createAdminEntity(String handle, String email, String passwordHash, LocalDateTime joinedAt) {
-        return new UserEntity(null, handle, email, passwordHash, UserRole.ADMIN, null, joinedAt);
+        return new UserEntity(null, handle, email, passwordHash, AuthProvider.LOCAL, UserRole.ADMIN, null, joinedAt);
+    }
+
+    /** 소셜(OAuth2) 자동 가입 — 비밀번호 없음, 일반 유저(USER). */
+    public static UserEntity createOAuthUser(String handle, String email, AuthProvider provider, LocalDateTime joinedAt) {
+        return new UserEntity(null, handle, email, null, provider, UserRole.USER, null, joinedAt);
     }
 
     /** 대표 칭호 변경 (PUT /me/title) */

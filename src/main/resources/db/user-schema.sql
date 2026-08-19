@@ -8,8 +8,9 @@ CREATE TABLE IF NOT EXISTS app_user (
     id                BIGINT AUTO_INCREMENT PRIMARY KEY,
     handle            VARCHAR(64)  NOT NULL,          -- 닉네임 겸 URL 키 (/users/{handle})
     email             VARCHAR(255) NOT NULL,          -- 로그인 아이디
-    password_hash     VARCHAR(100) NOT NULL,          -- BCrypt 해시(60자) 여유
-    role              VARCHAR(16)  NOT NULL DEFAULT 'USER',  -- USER | ADMIN
+    password_hash     VARCHAR(100) NULL,             -- BCrypt 해시. 소셜(OAuth) 유저는 NULL
+    provider          VARCHAR(16)  NOT NULL DEFAULT 'LOCAL',  -- LOCAL | GITHUB | GOOGLE
+    role              VARCHAR(16)  NOT NULL DEFAULT 'USER',   -- USER | ADMIN
     selected_title_id VARCHAR(32)  NULL,              -- 대표 칭호 (미선택 시 NULL)
     joined_at         DATETIME     NOT NULL,
     CONSTRAINT uq_user_email  UNIQUE (email),
