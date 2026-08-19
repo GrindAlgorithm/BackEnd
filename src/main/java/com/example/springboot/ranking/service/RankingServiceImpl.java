@@ -9,6 +9,7 @@ import com.example.springboot.season.dto.SeasonDTO;
 import com.example.springboot.season.entity.SeasonEntity;
 import com.example.springboot.season.entity.SeasonStatus;
 import com.example.springboot.season.repository.SeasonRepository;
+import com.example.springboot.user.CurrentUserProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,11 +29,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class RankingServiceImpl implements RankingService {
 
-    // 인증 도메인 연동 전 현재 유저(myEntry) placeholder
-    private static final String ME = "algo_lover";
-
     private final SeasonRankingRepository rankingRepository;
     private final SeasonRepository seasonRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     @Override
     public RankingDTO getRanking(RankingScope scope) {
@@ -48,9 +47,11 @@ public class RankingServiceImpl implements RankingService {
             case FRIENDS -> List.of();
         };
 
-        RankingEntryDTO myEntry = findMe(entries);
-        if (myEntry == null && scope == RankingScope.FRIENDS) {
-            myEntry = findMe(rankedSeasonEntries(current));
+        // 로그인 유저의 handle 로 내 순위를 찾는다. 비로그인이면 null(계약 §2.13).
+        String myHandle = currentUserProvider.currentHandle();
+        RankingEntryDTO myEntry = myHandle == null ? null : findMe(entries, myHandle);
+        if (myEntry == null && myHandle != null && scope == RankingScope.FRIENDS) {
+            myEntry = findMe(rankedSeasonEntries(current), myHandle);
         }
         return new RankingDTO(season, entries, myEntry);
     }
@@ -100,9 +101,9 @@ public class RankingServiceImpl implements RankingService {
         return entries;
     }
 
-    private RankingEntryDTO findMe(List<RankingEntryDTO> entries) {
+    private RankingEntryDTO findMe(List<RankingEntryDTO> entries, String myHandle) {
         return entries.stream()
-                .filter(e -> ME.equals(e.getHandle()))
+                .filter(e -> myHandle.equals(e.getHandle()))
                 .findFirst()
                 .orElse(null);
     }

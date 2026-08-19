@@ -3,10 +3,13 @@ package com.example.springboot.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,12 +30,18 @@ public class SecurityConfig {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf((auth) -> auth.disable());
+                .csrf((auth) -> auth.disable())
+                // REST + 세션 쿠키 인증: 폼 로그인/기본 인증 비활성, 미인증은 401(계약 §1.4)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
 
         http
                 .authorizeHttpRequests((auth) -> auth
                         .requestMatchers(
                                 "/api/v1/example",
+                                // 인증 — 로그인/회원가입/로그아웃(미인증 접근 허용). /me 는 인증 필요
+                                "/api/v1/auth/**",
                                 // 문제목록(시즌/시즌 문제) — 미로그인 열람 허용(연동 문서 §2.6)
                                 "/api/v1/seasons/**",
                                 // 홈 대시보드 — 인증 연동 전까지 접근 허용(추후 authenticated 로 전환)
@@ -47,6 +56,8 @@ public class SecurityConfig {
                                 // 랭킹 탭 — 연동 문서 §2.13
                                 "/api/v1/rankings/**"
                         ).permitAll()
+                        // 관리자 전용 — 공지 작성 등(요건 3). ADMIN 권한 필요
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
 
         return http.build();
