@@ -64,16 +64,25 @@ public class IntegrityServiceImpl implements IntegrityService {
             events = events.subList(0, capacity);
         }
 
+        String problemId = clamp(request.getProblemId(), 32);
         List<SolveEventEntity> entities = new ArrayList<>(events.size());
         for (SolveEventRequestDTO event : events) {
+            // 클라이언트 값은 신뢰하지 않는다 — 계약 위반 이벤트는 배치 전체를 죽이는 대신 보정/폐기
+            String type = clamp(event.getType(), 32);
+            if (type == null || type.isBlank()) {
+                log.warn("saveBatch: type 없는 이벤트 폐기 solveSessionId={}", solveSessionId);
+                continue;
+            }
+            String severity = clamp(event.getSeverity(), 16);
+            String message = clamp(event.getMessage(), 255);
             SolveEventRequestDTO.DetailDTO detail = event.getDetail();
             entities.add(SolveEventEntity.createSolveEventEntity(
                     solveSessionId,
-                    request.getProblemId(),
-                    event.getType(),
-                    event.getSeverity(),
+                    problemId == null ? "" : problemId,
+                    type,
+                    severity == null || severity.isBlank() ? "info" : severity,
                     parseClientTime(event.getAt()),
-                    event.getMessage(),
+                    message == null ? "" : message,
                     detail == null ? null : detail.getChars(),
                     detail == null ? null : detail.getDurationMs(),
                     detail == null ? null : detail.getCps(),
@@ -97,6 +106,14 @@ public class IntegrityServiceImpl implements IntegrityService {
                 summary.getAuthorshipRatio(), summary.getActiveMs(), summary.getBlurredMs(),
                 summary.getBlurCount(), receivedAt);
         summaryRepository.save(entity);
+    }
+
+    /** 컬럼 길이 초과분 절단 — 표시용 문자열이라 유실 허용 */
+    private String clamp(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
     }
 
     /** 클라이언트 시계(ISO 8601) 파싱 — 실패하면 null (received_at 으로 대조) */
