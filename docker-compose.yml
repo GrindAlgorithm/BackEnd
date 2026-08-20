@@ -33,6 +33,9 @@ services:
       - ./src/main/resources/db/user-schema.sql:/docker-entrypoint-initdb.d/11-user-schema.sql:ro
       - ./src/main/resources/db/discussion-schema.sql:/docker-entrypoint-initdb.d/12-discussion-schema.sql:ro
       - ./src/main/resources/db/discussion-seed.sql:/docker-entrypoint-initdb.d/13-discussion-seed.sql:ro
+      - ./src/main/resources/db/season-reward-schema.sql:/docker-entrypoint-initdb.d/14-season-reward-schema.sql:ro
+      - ./src/main/resources/db/season-reward-seed.sql:/docker-entrypoint-initdb.d/15-season-reward-seed.sql:ro
+      - ./src/main/resources/db/solve-event-schema.sql:/docker-entrypoint-initdb.d/16-solve-event-schema.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
