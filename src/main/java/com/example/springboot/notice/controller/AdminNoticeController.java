@@ -1,6 +1,6 @@
 package com.example.springboot.notice.controller;
 
-import com.example.springboot.notice.dto.NoticeDTO;
+import com.example.springboot.notice.dto.NoticeDetailDTO;
 import com.example.springboot.notice.dto.NoticeRequestDTO;
 import com.example.springboot.notice.service.NoticeService;
 import com.example.springboot.util.ResponseResult;
@@ -24,22 +24,22 @@ public class AdminNoticeController {
 
     private final NoticeService noticeService;
 
-    /** GET — 공지 목록(최신순, 관리 화면용). */
+    /** GET — 공지 목록(최신순, 관리 화면용 — 수정 폼에 body 필요해 상세로 내림). */
     @GetMapping("")
-    public ResponseResult<List<NoticeDTO>> list() {
+    public ResponseResult<List<NoticeDetailDTO>> list() {
         return ResponseResult.success(noticeService.getNotices());
     }
 
-    /** POST — 공지 작성. */
+    /** POST — 공지 작성(마크다운 body 포함). */
     @PostMapping("")
-    public ResponseResult<NoticeDTO> create(@Valid @RequestBody NoticeRequestDTO request) {
+    public ResponseResult<NoticeDetailDTO> create(@Valid @RequestBody NoticeRequestDTO request) {
         return ResponseResult.success(noticeService.createNotice(request));
     }
 
     /** PUT — 공지 수정(내용만, 게시 시각 유지). */
     @PutMapping("/{noticeId}")
-    public ResponseResult<NoticeDTO> update(@PathVariable long noticeId,
-                                            @Valid @RequestBody NoticeRequestDTO request) {
+    public ResponseResult<NoticeDetailDTO> update(@PathVariable long noticeId,
+                                                  @Valid @RequestBody NoticeRequestDTO request) {
         return ResponseResult.success(noticeService.updateNotice(noticeId, request));
     }
 

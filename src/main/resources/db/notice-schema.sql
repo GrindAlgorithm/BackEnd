@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS notice (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     tag          VARCHAR(32)  NOT NULL,           -- "공지" | "업데이트" 등
     title        VARCHAR(255) NOT NULL,
+    body         TEXT         NOT NULL DEFAULT '',-- 마크다운 본문 (요건 3 — 기존 행은 빈 본문)
     published_at DATETIME     NOT NULL,
     highlight    BIT          NOT NULL DEFAULT 0
 );

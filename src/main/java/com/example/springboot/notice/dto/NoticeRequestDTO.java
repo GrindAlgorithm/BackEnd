@@ -22,6 +22,10 @@ public class NoticeRequestDTO {
     @Size(max = 255, message = "제목은 255자 이하여야 합니다")
     private String title;
 
+    /** 마크다운 본문 — 제목만 있는 공지도 허용하므로 선택 (null → 빈 본문) */
+    @Size(max = 20_000, message = "본문은 20,000자 이하여야 합니다")
+    private String body;
+
     /** 상단 강조 여부 (기본 false) */
     private boolean highlight;
 }

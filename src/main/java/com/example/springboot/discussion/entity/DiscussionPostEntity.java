@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 /**
  * 토론 글 — 연동 문서 §2.14 DiscussionPost.
- * 글 작성은 Deferred라 현재 시드로만 운용. 작성자는 handle + 티어 스냅샷으로 보관한다.
+ * 작성은 요건 4 로 구현(댓글/투표는 Deferred). 작성자는 handle + 티어 스냅샷으로 보관한다.
  */
 @Entity
 @Getter
@@ -35,6 +35,10 @@ public class DiscussionPostEntity {
     @Column(nullable = false)
     private String title;
 
+    /** 마크다운 본문 (요건 4) — 목록 응답에는 내리지 않고 상세에서만 사용 */
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String body;
+
     @Column(name = "author_handle", nullable = false, length = 64)
     private String authorHandle;
 
@@ -50,4 +54,14 @@ public class DiscussionPostEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    public static DiscussionPostEntity createDiscussionPostEntity(ProblemEntity problem,
+                                                                  DiscussionCategory category,
+                                                                  String title, String body,
+                                                                  String authorHandle,
+                                                                  TierName authorTierName,
+                                                                  LocalDateTime createdAt) {
+        return new DiscussionPostEntity(null, problem, category, title, body,
+                authorHandle, authorTierName, 0, 0, createdAt);
+    }
 }

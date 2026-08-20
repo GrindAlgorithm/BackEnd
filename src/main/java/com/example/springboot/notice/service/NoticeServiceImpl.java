@@ -1,7 +1,7 @@
 package com.example.springboot.notice.service;
 
 import com.example.springboot.common.error.ApiException;
-import com.example.springboot.notice.dto.NoticeDTO;
+import com.example.springboot.notice.dto.NoticeDetailDTO;
 import com.example.springboot.notice.dto.NoticeRequestDTO;
 import com.example.springboot.notice.entity.NoticeEntity;
 import com.example.springboot.notice.repository.NoticeRepository;
@@ -22,32 +22,41 @@ public class NoticeServiceImpl implements NoticeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<NoticeDTO> getNotices() {
+    public List<NoticeDetailDTO> getNotices() {
         return noticeRepository.findAllByOrderByPublishedAtDesc().stream()
-                .map(NoticeDTO::of)
+                .map(NoticeDetailDTO::of)
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public NoticeDetailDTO getNotice(long noticeId) {
+        return noticeRepository.findById(noticeId)
+                .map(NoticeDetailDTO::of)
+                .orElseThrow(() -> ApiException.notFound("NOTICE_NOT_FOUND", "공지를 찾을 수 없습니다"));
+    }
+
+    @Override
     @Transactional
-    public NoticeDTO createNotice(NoticeRequestDTO request) {
+    public NoticeDetailDTO createNotice(NoticeRequestDTO request) {
         NoticeEntity notice = NoticeEntity.createNoticeEntity(
-                request.getTag(), request.getTitle(), LocalDateTime.now(), request.isHighlight());
+                request.getTag(), request.getTitle(), bodyOrEmpty(request),
+                LocalDateTime.now(), request.isHighlight());
         noticeRepository.save(notice);
 
         if (log.isInfoEnabled()) {
             log.info("createNotice success id={} title={}", notice.getId(), notice.getTitle());
         }
-        return NoticeDTO.of(notice);
+        return NoticeDetailDTO.of(notice);
     }
 
     @Override
     @Transactional
-    public NoticeDTO updateNotice(long noticeId, NoticeRequestDTO request) {
+    public NoticeDetailDTO updateNotice(long noticeId, NoticeRequestDTO request) {
         NoticeEntity notice = noticeRepository.findById(noticeId)
                 .orElseThrow(() -> ApiException.notFound("NOTICE_NOT_FOUND", "공지를 찾을 수 없습니다"));
-        notice.update(request.getTag(), request.getTitle(), request.isHighlight());
-        return NoticeDTO.of(notice);
+        notice.update(request.getTag(), request.getTitle(), bodyOrEmpty(request), request.isHighlight());
+        return NoticeDetailDTO.of(notice);
     }
 
     @Override
@@ -57,5 +66,10 @@ public class NoticeServiceImpl implements NoticeService {
             throw ApiException.notFound("NOTICE_NOT_FOUND", "공지를 찾을 수 없습니다");
         }
         noticeRepository.deleteById(noticeId);
+    }
+
+    /** 제목만 있는 공지 허용 — body 미입력(null)은 빈 본문으로 저장 (컬럼 NOT NULL). */
+    private String bodyOrEmpty(NoticeRequestDTO request) {
+        return request.getBody() == null ? "" : request.getBody();
     }
 }
