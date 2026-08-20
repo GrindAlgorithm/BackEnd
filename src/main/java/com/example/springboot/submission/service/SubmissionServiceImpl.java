@@ -7,6 +7,7 @@ import com.example.springboot.submission.dto.SubmitRequestDTO;
 import com.example.springboot.submission.entity.SubmissionEntity;
 import com.example.springboot.submission.entity.SubmissionStatus;
 import com.example.springboot.submission.repository.SubmissionRepository;
+import com.example.springboot.user.CurrentUserProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,12 +25,19 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final ProblemRepository problemRepository;
     private final SubmissionGrader submissionGrader;
+    private final CurrentUserProvider currentUserProvider;
 
     @Override
     @Transactional(readOnly = true)
     public List<SubmissionDTO> getSubmissions(Integer seasonId, String problemId, boolean mine) {
-        // TODO: mine 은 유저/인증 도메인 연동 시 "현재 유저 handle" 필터로 적용. 현재는 무시.
+        // mine: 로그인 유저 handle 필터. 미로그인이면 빈 목록(연동 문서 §2.12).
+        // ⚠ 최근 50건을 먼저 자른 뒤 거른다 — 내 제출이 50건 밖이면 빠질 수 있음(MVP 허용, 페이징 도입 시 개선)
+        String myHandle = mine ? currentUserProvider.currentHandle() : null;
+        if (mine && myHandle == null) {
+            return List.of();
+        }
         return findSubmissions(seasonId, problemId).stream()
+                .filter(s -> myHandle == null || myHandle.equals(s.getUserHandle()))
                 .map(SubmissionDTO::of)
                 .toList();
     }

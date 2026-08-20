@@ -5,6 +5,7 @@ import com.example.springboot.submission.dto.SubmissionResponseDTO;
 import com.example.springboot.submission.dto.SubmitRequestDTO;
 import com.example.springboot.submission.dto.SubmitResponseDTO;
 import com.example.springboot.submission.service.SubmissionService;
+import com.example.springboot.user.CurrentUserProvider;
 import com.example.springboot.util.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +19,11 @@ import java.util.List;
 @Slf4j
 public class SubmissionController {
 
-    // 인증 연동 전 임시 유저
+    // 미로그인 폴백 — /submissions/** 는 permitAll 이라 익명 제출이 올 수 있다
     private static final String ANONYMOUS = "anonymous";
 
     private final SubmissionService submissionService;
+    private final CurrentUserProvider currentUserProvider;
 
     /**
      * GET /api/v1/submissions — 채점 현황 목록 (연동 문서 §2.12)
@@ -50,7 +52,9 @@ public class SubmissionController {
      */
     @PostMapping("")
     public ResponseResult<SubmitResponseDTO> submit(@RequestBody SubmitRequestDTO request) {
-        Long submissionId = submissionService.submit(request, ANONYMOUS);
+        // 제출자는 로그인 유저 handle 로 기록 — myStatus/토론 접근/mine 필터의 기준값
+        String handle = currentUserProvider.currentHandle();
+        Long submissionId = submissionService.submit(request, handle != null ? handle : ANONYMOUS);
         if (submissionId == null) {
             return ResponseResult.<SubmitResponseDTO>error(null);
         }

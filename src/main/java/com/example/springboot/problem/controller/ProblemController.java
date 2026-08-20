@@ -5,6 +5,7 @@ import com.example.springboot.problem.dto.OpenProblemResponseDTO;
 import com.example.springboot.problem.dto.ProblemDetailDTO;
 import com.example.springboot.problem.dto.ProblemDetailResponseDTO;
 import com.example.springboot.problem.service.ProblemService;
+import com.example.springboot.user.CurrentUserProvider;
 import com.example.springboot.util.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,10 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ProblemController {
 
-    // 인증 연동 전 임시 유저 (본문 열람 세션 기록용) — 유저 도메인 생기면 세션에서 주입
+    // 미로그인 폴백 — /problems/** 는 permitAll 이라 익명 열람이 올 수 있다
     private static final String ANONYMOUS = "anonymous";
 
     private final ProblemService problemService;
+    private final CurrentUserProvider currentUserProvider;
 
     /**
      * GET /api/v1/problems/{problemId} — 문제 상세 (연동 문서 §2.7)
@@ -49,7 +51,9 @@ public class ProblemController {
      */
     @PostMapping("/{problemId}/open")
     public ResponseResult<OpenProblemResponseDTO> openProblem(@PathVariable String problemId) {
-        OpenProblemDTO open = problemService.openProblem(problemId, ANONYMOUS);
+        // 풀이 세션은 로그인 유저 handle 로 기록 — 이후 제출·무결성 신호(§2.17)와 조인된다
+        String handle = currentUserProvider.currentHandle();
+        OpenProblemDTO open = problemService.openProblem(problemId, handle != null ? handle : ANONYMOUS);
         if (open == null) {
             return ResponseResult.<OpenProblemResponseDTO>error(null);
         }
