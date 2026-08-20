@@ -29,7 +29,13 @@ public class ProblemSummaryDTO {
     private int points;            // 난이도별 고정 점수 (A1 확정)
     private ProblemStatus myStatus;
 
+    /** 미로그인/유저 이력 없는 문맥 — 전부 미시도 (연동 문서 §2.6) */
     public static ProblemSummaryDTO of(ProblemEntity problem) {
+        return of(problem, ProblemStatus.UNTRIED);
+    }
+
+    /** 로그인 유저의 제출 이력으로 계산한 myStatus 를 함께 싣는 문맥 (시즌 화면 등) */
+    public static ProblemSummaryDTO of(ProblemEntity problem, ProblemStatus myStatus) {
         return new ProblemSummaryDTO(
                 problem.getProblemId(),
                 problem.getDisplayNo(),
@@ -39,8 +45,7 @@ public class ProblemSummaryDTO {
                 problem.getTierLevel(),
                 problem.acceptanceRate(),
                 TierScore.of(problem.getTierName(), problem.getTierLevel()),
-                // 인증/제출 연동 전: 항상 미시도 (연동 문서 §2.6 — 미로그인 시 전부 untried)
-                ProblemStatus.UNTRIED
+                myStatus
         );
     }
 }

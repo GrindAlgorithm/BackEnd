@@ -21,6 +21,9 @@ public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Lo
 
     List<SubmissionEntity> findTop50ByOrderBySubmittedAtDesc();
 
+    /** 특정 유저의 시즌 내 전체 제출 — 시즌 화면 myStatus/리워드 계산용 (GET /seasons/current) */
+    List<SubmissionEntity> findByProblem_Season_IdAndUserHandle(Integer seasonId, String userHandle);
+
     /** 특정 유저가 해당 문제를 해결(Accepted)한 이력이 있는지 — 토론 접근 판정(§2.14) */
     boolean existsByProblem_ProblemIdAndUserHandleAndStatus(String problemId, String userHandle, SubmissionStatus status);
 

@@ -2,6 +2,8 @@ package com.example.springboot.season.controller;
 
 import com.example.springboot.problem.dto.ProblemSummaryResponseDTO;
 import com.example.springboot.season.dto.SeasonDTO;
+import com.example.springboot.season.dto.SeasonDetailDTO;
+import com.example.springboot.season.dto.SeasonDetailResponseDTO;
 import com.example.springboot.season.dto.SeasonResponseDTO;
 import com.example.springboot.season.service.SeasonService;
 import com.example.springboot.util.ResponseResult;
@@ -33,6 +35,25 @@ public class SeasonController {
             log.info("getSeasons Controller Success : {} seasons", seasons.size());
         }
         return ResponseResult.success(seasons);
+    }
+
+    /**
+     * GET /api/v1/seasons/current — 시즌 화면 통합 응답 (연동 문서 §2.5-c)
+     * 기간 진행률 + 시즌 문제(내 진행 상태 포함) + 리워드 달성 현황 + 지난 시즌 챔피언.
+     * ("current" 리터럴 매핑이 /{seasonId} 보다 우선 매칭된다)
+     */
+    @GetMapping("/current")
+    public ResponseResult<SeasonDetailResponseDTO> getCurrentSeasonDetail() {
+        SeasonDetailDTO detail = seasonService.getCurrentSeasonDetail();
+        if (detail == null) {
+            return ResponseResult.<SeasonDetailResponseDTO>error(null);
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("getCurrentSeasonDetail Controller Success : seasonId={}, {} problems, {} rewards",
+                    detail.getSeason().getId(), detail.getProblems().size(), detail.getRewards().size());
+        }
+        return ResponseResult.success(SeasonDetailResponseDTO.of(detail));
     }
 
     /** GET /api/v1/seasons/{seasonId} — 시즌 단건 기간 정보 (문제 탭 시즌 정보) */
