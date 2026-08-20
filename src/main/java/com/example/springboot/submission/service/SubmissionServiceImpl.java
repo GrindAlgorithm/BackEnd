@@ -1,5 +1,6 @@
 package com.example.springboot.submission.service;
 
+import com.example.springboot.language.service.LanguageService;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
 import com.example.springboot.submission.dto.SubmissionDTO;
@@ -26,6 +27,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final ProblemRepository problemRepository;
     private final SubmissionGrader submissionGrader;
     private final CurrentUserProvider currentUserProvider;
+    private final LanguageService languageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,6 +63,9 @@ public class SubmissionServiceImpl implements SubmissionService {
             return null;
         }
 
+        // 언어 검증 + judge0 id 해석 (요건 24 — language 테이블이 단일 소유)
+        int judge0LangId = languageService.resolveJudge0Id(request.getLanguage());
+
         int codeBytes = request.getSourceCode().getBytes(StandardCharsets.UTF_8).length;
         SubmissionEntity submission = SubmissionEntity.createSubmissionEntity(
                 problem, userHandle, SubmissionStatus.QUEUED, 0, null, null,
@@ -71,7 +76,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         submissionGrader.grade(
                 submission.getId(),
                 problem.getProblemId(),
-                request.getLanguage().getJudge0Id(),
+                judge0LangId,
                 problem.getTimeLimitSec(),
                 problem.getMemoryLimitMb() * 1024,
                 request.getSourceCode());

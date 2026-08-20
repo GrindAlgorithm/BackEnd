@@ -3,6 +3,7 @@ package com.example.springboot.submission.service;
 import com.example.springboot.judge0.Judge0Client;
 import com.example.springboot.judge0.Judge0ExecRequest;
 import com.example.springboot.judge0.Judge0Execution;
+import com.example.springboot.language.service.LanguageService;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
 import com.example.springboot.submission.dto.RunRequestDTO;
@@ -19,6 +20,7 @@ public class RunServiceImpl implements RunService {
 
     private final ProblemRepository problemRepository;
     private final Judge0Client judge0Client;
+    private final LanguageService languageService;
 
     @Override
     public Judge0Execution run(RunRequestDTO request) {
@@ -28,7 +30,7 @@ public class RunServiceImpl implements RunService {
         }
         // 실행은 채점이 아니므로 expectedOutput 없이 stdin 만으로 실행 (연동 문서 §2.9)
         Judge0ExecRequest exec = new Judge0ExecRequest(
-                request.getLanguage().getJudge0Id(),
+                languageService.resolveJudge0Id(request.getLanguage()),
                 request.getSourceCode(),
                 request.getStdin(),
                 null,

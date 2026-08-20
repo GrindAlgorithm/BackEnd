@@ -27,6 +27,10 @@ public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Lo
     /** 특정 유저가 해당 문제를 해결(Accepted)한 이력이 있는지 — 토론 접근 판정(§2.14) */
     boolean existsByProblem_ProblemIdAndUserHandleAndStatus(String problemId, String userHandle, SubmissionStatus status);
 
+    /** 이 제출 이전에 이미 같은 문제를 맞힌 적 있는지 — 첫 정답만 랭킹 반영(채점→랭킹 연동) */
+    boolean existsByProblem_ProblemIdAndUserHandleAndStatusAndIdNot(
+            String problemId, String userHandle, SubmissionStatus status, Long excludeSubmissionId);
+
     /** 해당 문제 최초 해결(Accepted) 제출 — firstSolvedAt(§2.14) */
     Optional<SubmissionEntity> findFirstByProblem_ProblemIdAndUserHandleAndStatusOrderBySubmittedAtAsc(
             String problemId, String userHandle, SubmissionStatus status);
