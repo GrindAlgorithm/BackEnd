@@ -9,6 +9,34 @@ spring:
     password: grind-local
     driver-class-name: org.mariadb.jdbc.Driver
 
+  # ── 소셜 로그인 (OAuth2, 연동 문서 §1.3) ─────────────────────────────────
+  # GitHub/Google OAuth 앱을 등록해 client-id/secret 을 발급받아 아래를 활성화한다.
+  # 미설정 시 소셜 로그인만 비활성(앱은 정상 기동). 콜백(redirect) URL 은
+  #   http://localhost:8080/login/oauth2/code/github
+  #   http://localhost:8080/login/oauth2/code/google
+  # 을 각 OAuth 앱에 등록할 것. (프론트는 /oauth2/authorization/{provider} 로 진입)
+  #
+  # GitHub:  https://github.com/settings/developers → New OAuth App
+  # Google:  https://console.cloud.google.com → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID
+  #
+  # security:
+  #   oauth2:
+  #     client:
+  #       registration:
+  #         github:
+  #           client-id: "발급받은_GitHub_client_id"
+  #           client-secret: "발급받은_GitHub_client_secret"
+  #           scope: read:user, user:email
+  #         google:
+  #           client-id: "발급받은_Google_client_id"
+  #           client-secret: "발급받은_Google_client_secret"
+  #           scope: email, profile
+
+# 소셜 로그인 성공 후 프론트로 돌아갈 경로 (dev는 프록시라 "/"로 충분)
+# app:
+#   oauth2:
+#     success-redirect: "/"
+
 # Judge0 채점 엔진 (연동 문서 §3, B3 — 클라이언트에 직접 노출 금지)
 # client=stub(기본): 실제 Judge0 없이 채점 파이프라인 동작(로컬 시뮬레이션, 진짜 채점 아님)
 # client=real: 실제 Judge0로 채점.

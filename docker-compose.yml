@@ -36,6 +36,12 @@ services:
       - ./src/main/resources/db/season-reward-schema.sql:/docker-entrypoint-initdb.d/14-season-reward-schema.sql:ro
       - ./src/main/resources/db/season-reward-seed.sql:/docker-entrypoint-initdb.d/15-season-reward-seed.sql:ro
       - ./src/main/resources/db/solve-event-schema.sql:/docker-entrypoint-initdb.d/16-solve-event-schema.sql:ro
+      - ./src/main/resources/db/recommendation-schema.sql:/docker-entrypoint-initdb.d/17-recommendation-schema.sql:ro
+      - ./src/main/resources/db/recommendation-seed.sql:/docker-entrypoint-initdb.d/18-recommendation-seed.sql:ro
+      - ./src/main/resources/db/language-schema.sql:/docker-entrypoint-initdb.d/19-language-schema.sql:ro
+      - ./src/main/resources/db/language-seed.sql:/docker-entrypoint-initdb.d/20-language-seed.sql:ro
+      - ./src/main/resources/db/problem-testcase-schema.sql:/docker-entrypoint-initdb.d/21-problem-testcase-schema.sql:ro
+      - ./src/main/resources/db/problem-testcase-seed.sql:/docker-entrypoint-initdb.d/22-problem-testcase-seed.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
