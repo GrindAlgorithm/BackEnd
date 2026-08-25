@@ -70,7 +70,10 @@ public class SecurityConfig {
                                 // ⚠ 추후 POST /problems/{id}/open(본문) 추가 시 GET만 허용하도록 좁힐 것
                                 "/api/v1/problems/**",
                                 // 랭킹 탭 — 연동 문서 §2.13
-                                "/api/v1/rankings/**"
+                                "/api/v1/rankings/**",
+                                // 지원 언어 목록(요건 24) · 공지 상세 — 미로그인 열람 허용
+                                "/api/v1/languages/**",
+                                "/api/v1/notices/**"
                         ).permitAll()
                         // 관리자 전용 — 공지 작성 등(요건 3). ADMIN 권한 필요
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
