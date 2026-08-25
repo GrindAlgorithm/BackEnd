@@ -56,9 +56,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private UserEntity register(String email, AuthProvider provider, OAuth2User oauthUser) {
-        String base = provider == AuthProvider.GITHUB
-                ? String.valueOf(oauthUser.getAttribute("login"))
-                : email.substring(0, email.indexOf('@'));
+        // ⚠ getAttribute 는 제네릭 <A> A — String.valueOf(...) 에 직접 넘기면 valueOf(char[])
+        //   오버로드로 추론돼 ClassCastException(String→char[]) 이 난다. Object 변수로 받는다.
+        String base;
+        if (provider == AuthProvider.GITHUB) {
+            Object login = oauthUser.getAttribute("login");
+            base = login == null ? "" : login.toString();
+        } else {
+            base = email.substring(0, email.indexOf('@'));
+        }
         String handle = uniqueHandle(sanitize(base));
 
         UserEntity user = UserEntity.createOAuthUser(handle, email, provider, LocalDateTime.now());
