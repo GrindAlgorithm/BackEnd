@@ -27,12 +27,12 @@ spring:
   #     client:
   #       registration:
   #         github:
-  #           client-id: "<GitHub_client_id>"          # 예: Ov23li********
+  #           client-id: "<GitHub_client_id>"
   #           client-secret: "<GitHub_client_secret>"
   #           scope: read:user, user:email
   #         google:
-  #           client-id: "<Google_client_id>"          # 예: 4506*******.apps.googleusercontent.com
-  #           client-secret: "<Google_client_secret>"  # 예: GOCSPX-********
+  #           client-id: "<Google_client_id>"          # 형식: xxxxxxxx.apps.googleusercontent.com
+  #           client-secret: "<Google_client_secret>"
   #           scope: email, profile
 
 # 소셜 로그인 성공 후 돌아갈 프론트 주소.
