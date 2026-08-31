@@ -9,3 +9,4 @@ build/
 .gradle/
 .idea/
 out/
+src/main/resources/application-vm.yml
