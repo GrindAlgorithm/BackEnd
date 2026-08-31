@@ -34,4 +34,7 @@ public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Lo
     /** 해당 문제 최초 해결(Accepted) 제출 — firstSolvedAt(§2.14) */
     Optional<SubmissionEntity> findFirstByProblem_ProblemIdAndUserHandleAndStatusOrderBySubmittedAtAsc(
             String problemId, String userHandle, SubmissionStatus status);
+
+    /** 특정 유저의 전체 제출(최신순) — 프로필 통계/잔디/최근 목록(§2.15) */
+    List<SubmissionEntity> findByUserHandleOrderBySubmittedAtDesc(String userHandle);
 }

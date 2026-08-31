@@ -73,7 +73,9 @@ public class SecurityConfig {
                                 "/api/v1/rankings/**",
                                 // 지원 언어 목록(요건 24) · 공지 상세 — 미로그인 열람 허용
                                 "/api/v1/languages/**",
-                                "/api/v1/notices/**"
+                                "/api/v1/notices/**",
+                                // 유저 프로필 — 미로그인 열람 허용(§2.15). PUT /me/title 은 인증 필요
+                                "/api/v1/users/**"
                         ).permitAll()
                         // 관리자 전용 — 공지 작성 등(요건 3). ADMIN 권한 필요
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
