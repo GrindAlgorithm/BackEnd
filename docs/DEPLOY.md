@@ -187,6 +187,26 @@ APP_HOST=<APP_IP> KEY_PATH=~/.ssh/deploy_key ./deploy/deploy.sh frontend   # 프
 교체·재기동·기동 확인은 서버의 `grindalgo-deploy` 가 처리합니다.
 새 jar 가 뜨지 않으면 **직전 버전으로 자동 롤백**하므로, 배포 실패로 서비스가 멈춰 있지 않습니다.
 
+### GitHub Actions 자동 배포
+
+`staging` 브랜치가 배포 기준선입니다. `dev` 에서 개발하고, 내보낼 준비가 되면 `staging` 에 올립니다.
+
+```bash
+git checkout staging && git merge dev && git push origin staging
+```
+
+push 하면 `.github/workflows/deploy.yml` 이 CI 와 같은 조건으로 테스트한 뒤, 통과했을 때만
+서버에 올립니다. 두 저장소가 각자 배포하므로 **API 가 바뀌는 변경은 백엔드를 먼저** 올리세요.
+
+저장소마다 Secrets 두 개가 필요합니다 — Settings → Secrets and variables → Actions.
+
+| 이름 | 값 |
+|---|---|
+| `DEPLOY_SSH_KEY` | 배포 계정 개인키 전체 (`-----BEGIN` 부터 `-----END` 줄까지) |
+| `APP_HOST` | 앱 서버 주소 |
+
+개인키는 저장소에 절대 넣지 마세요. Secrets 는 로그에 찍혀도 자동으로 가려집니다.
+
 ## 7. 도메인 연결
 
 도메인을 사시면 A 레코드를 `<APP_IP>` 로 지정하고, `/etc/caddy/Caddyfile` 첫 줄의
