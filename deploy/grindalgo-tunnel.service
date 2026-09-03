@@ -1,0 +1,19 @@
+[Unit]
+Description=SSH tunnel to DB VM (MariaDB 3306, judge0 2358)
+After=network-online.target
+Wants=network-online.target
+# 백엔드보다 먼저 떠야 한다 — DB 연결이 없으면 Spring Boot 기동이 실패한다.
+Before=grindalgo-backend.service
+
+[Service]
+User=ubuntu
+Group=ubuntu
+Environment=AUTOSSH_GATETIME=0
+# -M 0 : autossh 자체 감시 포트를 쓰지 않고 ssh 의 ServerAlive 로 끊김을 감지한다.
+# 포워딩 포트는 127.0.0.1 에만 열어 앱 서버 외부로 새지 않게 한다.
+ExecStart=/usr/bin/autossh -M 0 -N -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i /home/ubuntu/.ssh/tunnel_ed25519 -L 127.0.0.1:3306:127.0.0.1:3306 -L 127.0.0.1:2358:127.0.0.1:2358 ubuntu@10.0.0.186
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+# Caddy — HTTPS 종단 + 프론트 정적 파일 + 백엔드 리버스 프록시.
+#
+# 프론트와 API 가 같은 오리진을 쓰므로 세션 쿠키가 그대로 흐르고 CORS 설정이 필요 없다.
+# 인증서는 Caddy 가 Let's Encrypt 에서 자동 발급·갱신한다(80/443 이 열려 있어야 한다).
+#
+# 도메인을 사기 전 임시로 IP 로 띄우려면 첫 줄을 아래처럼 바꾼다:
+#   :80 {
+# 그러면 HTTPS 없이 http://<VM IP>/ 로 접속된다. 이때 세션 쿠키의 secure 옵션은
+# application-prod.yml 에서 잠시 false 로 두어야 로그인이 동작한다.
+
+grindalgo.example.com {
+	encode zstd gzip
+
+	# API·소셜 로그인은 백엔드로 넘긴다. 그 외는 정적 파일.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /oauth2/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /login/oauth2/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	# Vite 빌드 산출물. SPA 라 없는 경로는 index.html 로 넘겨 라우터가 처리하게 한다.
+	handle {
+		root * /var/www/grindalgo
+		try_files {path} /index.html
+		file_server
+	}
+
+	# 해시가 붙은 자산은 오래 캐시하고, index.html 은 항상 새로 받게 한다.
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	header /index.html Cache-Control "no-cache"
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# 로그는 journal 로 보낸다. 패키지의 caddy.service 는 systemd 샌드박스가 걸려 있어
+	# /var/log 아래에 직접 쓰지 못한다(권한 오류로 기동 실패).
+	#   조회: sudo journalctl -u caddy -f
+	log {
+		output stderr
+		format console
+	}
+}

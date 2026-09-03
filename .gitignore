@@ -9,4 +9,7 @@ build/
 .gradle/
 .idea/
 out/
+
+# 실제 접속 정보가 든 프로필 — 커밋 금지 (템플릿은 *.example 로 관리)
 src/main/resources/application-vm.yml
+src/main/resources/application-prod.yml
