@@ -10,7 +10,7 @@
 set -euo pipefail
 
 APP_HOST="${APP_HOST:-}"                       # 앱 서버 공인 IP 또는 도메인
-APP_USER="${APP_USER:-ubuntu}"
+APP_USER="${APP_USER:-deployer}"               # 배포 전용 계정 — sudo 로는 grindalgo-deploy 만 실행 가능
 KEY_PATH="${KEY_PATH:-$HOME/.ssh/id_ed25519}"
 
 TARGET="${1:-all}"
@@ -36,25 +36,10 @@ deploy_backend() {
   echo "▸ 업로드"
   scp "${SCP_OPTS[@]}" "$jar" "$APP_USER@$APP_HOST:/tmp/backend.jar"
 
-  echo "▸ 교체 후 재기동"
-  # 실패 시 되돌릴 수 있도록 직전 jar 를 남긴다.
-  "${SSH[@]}" 'sudo install -o grindalgo -g grindalgo -m 640 /tmp/backend.jar /opt/grindalgo/backend.new.jar \
-    && sudo mv -f /opt/grindalgo/backend.jar /opt/grindalgo/backend.prev.jar 2>/dev/null || true; \
-    sudo mv -f /opt/grindalgo/backend.new.jar /opt/grindalgo/backend.jar \
-    && rm -f /tmp/backend.jar \
-    && sudo systemctl restart grindalgo-backend'
-
-  echo "▸ 기동 대기"
-  for _ in $(seq 1 30); do
-    if "${SSH[@]}" 'curl -sf -o /dev/null http://127.0.0.1:8080/api/v1/languages' 2>/dev/null; then
-      echo "  백엔드 정상"
-      return 0
-    fi
-    sleep 4
-  done
-  echo "  기동 확인 실패 — 로그를 확인하세요:" >&2
-  echo "    ssh $APP_USER@$APP_HOST 'sudo journalctl -u grindalgo-backend -n 80 --no-pager'" >&2
-  return 1
+  # 교체·재기동·기동확인·실패 시 롤백은 서버 쪽 grindalgo-deploy 가 전부 처리한다.
+  # 배포 계정이 sudo 로 실행할 수 있는 유일한 명령이라, 여기서 임의 명령을 보낼 수 없다.
+  echo "▸ 서버에서 교체·재기동"
+  "${SSH[@]}" 'sudo /usr/local/bin/grindalgo-deploy backend'
 }
 
 deploy_frontend() {
@@ -62,20 +47,14 @@ deploy_frontend() {
   (cd "$FRONTEND_DIR" && npm run build)
 
   echo "▸ 업로드"
-  # 정적 파일은 통째로 갈아끼운다. 배포 중 반쯤 섞인 상태가 보이지 않도록 새 디렉터리에 풀고 교체한다.
+  # 정적 파일은 통째로 갈아끼운다. 배포 중 반쯤 섞인 상태가 보이지 않도록
+  # 서버 쪽에서 임시 디렉터리에 풀고 한 번에 교체한다(grindalgo-deploy frontend).
   tar -C "$FRONTEND_DIR/dist" -czf /tmp/grindalgo-dist.tgz .
   scp "${SCP_OPTS[@]}" /tmp/grindalgo-dist.tgz "$APP_USER@$APP_HOST:/tmp/"
   rm -f /tmp/grindalgo-dist.tgz
 
-  "${SSH[@]}" 'set -e; \
-    rm -rf /tmp/grindalgo-new && mkdir -p /tmp/grindalgo-new && \
-    tar -C /tmp/grindalgo-new -xzf /tmp/grindalgo-dist.tgz && \
-    sudo rm -rf /var/www/grindalgo.old && \
-    sudo mv /var/www/grindalgo /var/www/grindalgo.old 2>/dev/null || true; \
-    sudo mv /tmp/grindalgo-new /var/www/grindalgo && \
-    sudo chown -R caddy:caddy /var/www/grindalgo && \
-    rm -f /tmp/grindalgo-dist.tgz'
-  echo "  프론트 배포 완료"
+  echo "▸ 서버에서 교체"
+  "${SSH[@]}" 'sudo /usr/local/bin/grindalgo-deploy frontend'
 }
 
 case "$TARGET" in

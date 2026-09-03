@@ -1,0 +1,15 @@
+# /etc/sudoers.d/grindalgo-deployer  (권한 0440, 소유자 root:root)
+#
+# deployer 계정이 sudo 로 할 수 있는 일은 아래 두 줄이 전부다.
+# 인자까지 고정하므로 grindalgo-deploy 에 다른 인자를 붙이거나 다른 명령을 실행할 수 없다.
+#
+# 설치:
+#   sudo install -o root -g root -m 0440 sudoers-deployer /etc/sudoers.d/grindalgo-deployer
+#   sudo visudo -c        # 문법 검사 — 반드시 확인할 것
+#
+# 주의: 이 파일에 sudo mv / sudo systemctl 같은 범용 명령을 추가하지 말 것.
+# 임의 경로를 인자로 받는 명령을 열어 주면 사실상 root 권한을 준 것과 같다.
+
+# sudoers 는 기본이 거부다. 아래에 적힌 것만 허용되고 나머지는 전부 막힌다.
+deployer ALL=(root) NOPASSWD: /usr/local/bin/grindalgo-deploy backend
+deployer ALL=(root) NOPASSWD: /usr/local/bin/grindalgo-deploy frontend
