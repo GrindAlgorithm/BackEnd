@@ -8,6 +8,10 @@
 Caddyfile   text eol=lf
 gradlew     text eol=lf
 
+# 확장자가 없어 위 규칙에 걸리지 않는 서버 파일들
+deploy/grindalgo-deploy  text eol=lf
+deploy/sudoers-deployer  text eol=lf
+
 # Windows 전용 스크립트는 CRLF 로 둔다.
 *.ps1       text eol=crlf
 *.bat       text eol=crlf

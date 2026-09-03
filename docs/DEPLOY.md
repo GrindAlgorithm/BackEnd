@@ -4,14 +4,14 @@ Oracle Cloud **Always Free** 범위 안에서 백엔드와 프론트엔드를 �
 
 ```
                       인터넷
-                        │  https
+                        │  http(s)
                         ▼
-        ┌───────────────────────────────┐        ┌──────────────────────────┐
-        │ VM #2 (앱 서버, 신규)          │  사설망 │ VM #1 (129.225.146.170)  │
-        │  Caddy :443                   │───────▶│  MariaDB   10.0.0.186:3306│
-        │   ├ /api/*  → :8080           │ 10.0.0.x│  judge0    10.0.0.186:2358│
-        │   └ 그 외   → 정적 프론트      │        │                          │
-        │  Spring Boot :8080 (localhost)│        └──────────────────────────┘
+        ┌───────────────────────────────┐                    ┌──────────────────────────┐
+        │ VM #2 앱 서버 (64.110.117.207) │   SSH 터널(autossh) │ VM #1 DB (129.225.146.170)│
+        │  Caddy :80/:443               │═══════════════════▶│  MariaDB  127.0.0.1:3306 │
+        │   ├ /api/*  → :8080           │  10.0.0.46          │  judge0   127.0.0.1:2358 │
+        │   └ 그 외   → 정적 프론트      │      → 10.0.0.186   │                          │
+        │  Spring Boot 127.0.0.1:8080   │                    └──────────────────────────┘
         └───────────────────────────────┘
 ```
 
@@ -35,8 +35,8 @@ Compute → Instances → **Create instance**
 | Public IP | 할당함 |
 | SSH key | 기존 `~/.ssh/id_ed25519.pub` |
 
-**같은 서브넷을 고르는 것이 가장 중요합니다.** 그래야 사설 IP 로 DB 에 붙어 SSH 터널이 필요 없고,
-DB 를 인터넷에 노출하지 않아도 됩니다.
+**같은 서브넷을 고르는 것이 중요합니다.** 두 VM 이 사설망으로 통하므로 DB 를 인터넷에 노출하지
+않아도 되고, 아래 SSH 터널도 사설 IP 로 연결됩니다.
 
 만든 뒤 공인 IP 를 확인해 두세요. 아래에서 `<APP_IP>` 로 씁니다.
 
@@ -139,18 +139,55 @@ sudo systemctl enable grindalgo-backend
 
 `application-prod.yml` 이 `/opt/grindalgo` 에 있으면 Spring Boot 가 작업 디렉터리에서 자동으로 읽습니다.
 
-## 5. 배포
+## 5. 배포 전용 계정
+
+배포는 `deployer` 계정으로 합니다. 이 계정이 sudo 로 할 수 있는 일은 **배포 스크립트 실행 두 가지뿐**입니다.
+CI 에서 자동 배포를 붙일 때 `ubuntu` 계정 키를 GitHub Secrets 에 넣으면 저장소에 쓰기 권한이 있는
+사람이 곧 서버 관리자가 되므로, 권한을 좁힌 계정을 따로 둡니다.
+
+```bash
+sudo useradd -m -s /bin/bash deployer
+sudo mkdir -p /home/deployer/.ssh && sudo chmod 700 /home/deployer/.ssh
+sudo chown -R deployer:deployer /home/deployer/.ssh
+
+# 배포 스크립트 — root 소유라 deployer 가 고칠 수 없다
+sudo install -o root -g root -m 0755 deploy/grindalgo-deploy /usr/local/bin/grindalgo-deploy
+
+# sudo 허용 목록 — 인자까지 고정된 두 줄이 전부
+sudo install -o root -g root -m 0440 deploy/sudoers-deployer /etc/sudoers.d/grindalgo-deployer
+sudo visudo -c        # 문법 검사, 반드시 확인
+```
+
+배포용 SSH 키는 따로 만들어 공개키만 등록합니다. `restrict` 를 붙이면 포트 포워딩·에이전트·X11 이
+막히고 파일 전송과 명령 실행만 남습니다.
+
+```bash
+ssh-keygen -t ed25519 -N '' -f deploy_key -C 'github-actions@grindalgo'
+# 서버의 /home/deployer/.ssh/authorized_keys 에 아래 형태로 (앞의 restrict 가 핵심)
+#   restrict ssh-ed25519 AAAA... github-actions@grindalgo
+```
+
+**개인키는 저장소에 넣지 마세요.** CI 에 쓸 때는 GitHub Secrets 에 보관합니다.
+
+이렇게 해두면 키가 유출돼도 공격자가 할 수 있는 일은 "이 서버에 코드를 배포하는 것"뿐입니다.
+DB 비밀번호 파일(`application-prod.yml`)이나 터널 개인키를 읽을 수 없고, 다른 서비스를 만지거나
+배포 스크립트 자체를 고칠 수도 없습니다.
+
+## 6. 배포
 
 로컬에서 한 줄이면 빌드·업로드·재기동까지 됩니다.
 
 ```bash
 cd BackEnd
-APP_HOST=<APP_IP> ./deploy/deploy.sh            # 백엔드 + 프론트
-APP_HOST=<APP_IP> ./deploy/deploy.sh backend    # 백엔드만
-APP_HOST=<APP_IP> ./deploy/deploy.sh frontend   # 프론트만
+APP_HOST=<APP_IP> KEY_PATH=~/.ssh/deploy_key ./deploy/deploy.sh            # 백엔드 + 프론트
+APP_HOST=<APP_IP> KEY_PATH=~/.ssh/deploy_key ./deploy/deploy.sh backend    # 백엔드만
+APP_HOST=<APP_IP> KEY_PATH=~/.ssh/deploy_key ./deploy/deploy.sh frontend   # 프론트만
 ```
 
-## 6. 도메인 연결
+교체·재기동·기동 확인은 서버의 `grindalgo-deploy` 가 처리합니다.
+새 jar 가 뜨지 않으면 **직전 버전으로 자동 롤백**하므로, 배포 실패로 서비스가 멈춰 있지 않습니다.
+
+## 7. 도메인 연결
 
 도메인을 사시면 A 레코드를 `<APP_IP>` 로 지정하고, `/etc/caddy/Caddyfile` 첫 줄의
 `grindalgo.example.com` 을 실제 도메인으로 바꾼 뒤 `sudo systemctl reload caddy` 하면
