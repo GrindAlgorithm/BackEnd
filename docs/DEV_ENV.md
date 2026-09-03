@@ -87,7 +87,66 @@ PORT=8081 VM_HOST=1.2.3.4 ./run-vm.sh          # macOS / Linux
 
 ---
 
-## 4. 함께 쓸 때 알아둘 것
+## 4. DB 클라이언트로 접속하기 (DBeaver · DataGrip · HeidiSQL)
+
+MariaDB 는 인터넷에 열려 있지 않습니다. **SSH 터널을 거쳐야만** 붙을 수 있고, 이건 의도한 구성입니다.
+DB 를 공개 인터넷에 노출하면 그날부터 무차별 대입 시도를 받습니다.
+
+방법이 두 가지인데, **B 를 권합니다.** 백엔드를 띄우지 않아도 되고 도구가 터널을 알아서 관리합니다.
+
+### A. 이미 열어 둔 터널 재사용
+
+`run-vm.ps1` / `run-vm.sh` 로 백엔드를 띄워 두었다면 터널이 이미 열려 있습니다.
+클라이언트에서 그냥 로컬 포트로 붙으면 됩니다.
+
+| 항목 | 값 |
+|---|---|
+| Host | `localhost` |
+| Port | `13307` |
+| Database | `example` |
+| User / Password | `grind` / (관리자에게 받은 비밀번호) |
+
+### B. 클라이언트 내장 SSH 터널 (권장)
+
+DBeaver 는 연결 설정의 **SSH** 탭, DataGrip 은 **SSH/SSL** 탭에서 설정합니다.
+백엔드를 띄우지 않아도 되고, 연결할 때마다 도구가 터널을 열고 닫습니다.
+
+**SSH 탭**
+
+| 항목 | 값 |
+|---|---|
+| Use SSH Tunnel | 체크 |
+| Host / Port | `129.225.146.170` / `22` |
+| User Name | `ubuntu` |
+| Authentication | Public Key |
+| Private Key | 본인 SSH 개인키 (예: `C:\Users\<이름>\.ssh\id_ed25519`) |
+
+**Main 탭** — 여기의 Host 는 *SSH 서버에서 본* 주소이므로 `localhost` 입니다.
+
+| 항목 | 값 |
+|---|---|
+| Server Host | `localhost` |
+| Port | `3306` |
+| Database | `example` |
+| Username / Password | `grind` / (관리자에게 받은 비밀번호) |
+
+> 흔한 실수: Main 탭 Host 에 VM 의 공인 IP 를 넣는 것입니다. 터널을 통과한 뒤에는 VM 내부에서
+> 접속하는 셈이라 `localhost` 가 맞습니다. 공인 IP 를 넣으면 연결이 거부됩니다.
+
+### 접속이 안 될 때
+
+- **Public key denied** — 공개키가 아직 VM 에 등록되지 않았습니다. 관리자에게 요청하세요.
+- **Connection refused (터널은 열림)** — VM 의 MariaDB 가 내려갔을 수 있습니다.
+  `ssh ubuntu@129.225.146.170 "systemctl status mariadb"` 로 확인하세요.
+- **포트 13307 이 이미 사용 중** — A 방식에서 터널이 중복으로 열렸습니다. 기존 터널을 쓰면 됩니다.
+
+> DB 계정은 팀이 `grind` 하나를 공유합니다. 누가 어떤 쿼리를 실행했는지 구분되지 않으므로,
+> `DELETE` · `UPDATE` · `DROP` 은 **`WHERE` 를 반드시 확인**하고 실행하세요. 개발계라도
+> 되돌리려면 시드를 다시 넣어야 합니다.
+
+---
+
+## 5. 함께 쓸 때 알아둘 것
 
 **DB 는 한 벌을 같이 씁니다.** 스키마도 데이터도 공유하므로, 팀원이 만든 제출·랭킹·토론이
 내 화면에도 보입니다. 각자 자기 계정으로 로그인하면 대부분 문제가 없지만,
@@ -107,7 +166,7 @@ PORT=8081 VM_HOST=1.2.3.4 ./run-vm.sh          # macOS / Linux
 
 ---
 
-## 5. 자주 겪는 문제
+## 6. 자주 겪는 문제
 
 **`Unable to determine Dialect without JDBC metadata`**
 프로필을 지정하지 않고 띄웠을 때 가장 흔합니다. 프로필 기본값이 `local` 이라
