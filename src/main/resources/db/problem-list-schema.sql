@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS season (
     name        VARCHAR(64) NOT NULL,
     start_date  DATE        NOT NULL,
     end_date    DATE        NOT NULL,
-    status      VARCHAR(16) NOT NULL            -- CURRENT | PAST | BETA (enum 이름)
+    status      VARCHAR(16) NOT NULL            -- CURRENT | PAST | BETA | UPCOMING (enum 이름)
 );
 
 CREATE TABLE IF NOT EXISTS problem (

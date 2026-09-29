@@ -43,7 +43,7 @@ public class DiscussionServiceImpl implements DiscussionService {
 
     @Override
     public DiscussionResponseDTO getDiscussion(String problemId) {
-        if (problemRepository.findByProblemId(problemId).isEmpty()) {
+        if (problemRepository.findPublicByProblemId(problemId).isEmpty()) {
             throw ApiException.notFound("PROBLEM_NOT_FOUND", "문제를 찾을 수 없습니다");
         }
 
@@ -83,7 +83,7 @@ public class DiscussionServiceImpl implements DiscussionService {
     @Override
     @Transactional
     public DiscussionPostDetailDTO createPost(String problemId, DiscussionCreateRequestDTO request) {
-        ProblemEntity problem = problemRepository.findByProblemId(problemId)
+        ProblemEntity problem = problemRepository.findPublicByProblemId(problemId)
                 .orElseThrow(() -> ApiException.notFound("PROBLEM_NOT_FOUND", "문제를 찾을 수 없습니다"));
         String myHandle = requireSolved(problemId);
 

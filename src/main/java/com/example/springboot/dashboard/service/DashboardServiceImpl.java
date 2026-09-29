@@ -82,9 +82,10 @@ public class DashboardServiceImpl implements DashboardService {
         );
     }
 
-    /** 오늘의 추천: recommendation 테이블의 추천 순위(rank_no) 순으로 상위 N개 노출 */
+    /** 오늘의 추천: recommendation 테이블의 추천 순위(rank_no) 순으로 상위 N개 노출. 공개 전 시즌 문제는 제외 */
     private List<TodayPickDTO> buildTodayPicks() {
         return recommendationRepository.findAllByOrderByRankNoAsc().stream()
+                .filter(r -> r.getProblem().getSeason() == null || r.getProblem().getSeason().getStatus().isPublic())
                 .limit(MAX_TODAY_PICKS)
                 .map(r -> TodayPickDTO.of(r.getProblem(), r.getReason(), r.getReasonType()))
                 .toList();

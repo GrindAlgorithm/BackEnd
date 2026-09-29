@@ -60,7 +60,7 @@ public class SubmissionServiceImpl implements SubmissionService {
      */
     @Override
     public Long submit(SubmitRequestDTO request, String userHandle) {
-        ProblemEntity problem = problemRepository.findByProblemId(request.getProblemId()).orElse(null);
+        ProblemEntity problem = problemRepository.findPublicByProblemId(request.getProblemId()).orElse(null);
         if (problem == null) {
             return null;
         }

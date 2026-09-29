@@ -16,3 +16,5 @@ deploy/sudoers-deployer  text eol=lf
 *.ps1       text eol=crlf
 *.bat       text eol=crlf
 *.cmd       text eol=crlf
+# SQL 시드의 문자열 리터럴에는 채점 입출력이 들어 있다 — CRLF 로 체크아웃되면 CR 이 데이터로 섞여 오답이 난다
+*.sql text eol=lf

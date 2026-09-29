@@ -31,6 +31,11 @@ public class SeasonEntity {
     @Column(nullable = false, length = 16)
     private SeasonStatus status;
 
+    /** 날짜 기준 상태 전환 (SeasonLifecycleService 전용) */
+    public void changeStatus(SeasonStatus status) {
+        this.status = status;
+    }
+
     public static SeasonEntity createSeasonEntity(String name, LocalDate startDate, LocalDate endDate, SeasonStatus status) {
         return new SeasonEntity(null, name, startDate, endDate, status);
     }
