@@ -16,7 +16,10 @@ public interface SubmissionService {
      */
     public List<SubmissionDTO> getSubmissions(Integer seasonId, String problemId, boolean mine);
 
-    /** 제출 = 비동기 채점 시작 (연동 문서 §2.10). 발급된 submissionId 반환, 문제 없으면 null */
+    /**
+     * 제출 = 비동기 채점 시작 (연동 문서 §2.10). 발급된 submissionId 반환, 문제 없으면 null.
+     * 풀이 세션이 이 유저·이 문제의 것이 아니면 400 INVALID_SOLVE_SESSION (B2).
+     */
     public Long submit(SubmitRequestDTO request, String userHandle);
 
     /** 채점 상태 단건 (폴링) — 연동 문서 §2.11. 없으면 null */

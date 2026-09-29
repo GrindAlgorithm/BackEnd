@@ -46,7 +46,7 @@ class UserProfileServiceImplTest {
     }
 
     private SubmissionEntity submission(ProblemEntity p, SubmissionStatus status, LocalDateTime at) {
-        return SubmissionEntity.createSubmissionEntity(p, "park", status, null, null, null,
+        return SubmissionEntity.createSubmissionEntity(p, "park", null, status, null, null, null,
                 LanguageCode.JAVA11, 100, at);
     }
 

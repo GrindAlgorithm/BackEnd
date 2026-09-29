@@ -56,11 +56,6 @@ public class SeasonRankingEntity {
         return new SeasonRankingEntity(null, season, handle, tierName, tierLevel, score, solvedCount, lastActiveAt);
     }
 
-    /** 신규 진입 행 — 첫 정답 반영 직전 상태(브론즈 V, 0점). */
-    public static SeasonRankingEntity createUnrankedEntity(SeasonEntity season, String handle, LocalDateTime at) {
-        return new SeasonRankingEntity(null, season, handle, TierName.BRONZE, TierLevel.V, 0, 0, at);
-    }
-
     /** 첫 정답 반영 — 점수 가산·풀이 수 증가 후 누적 점수로 티어 재계산 (채점→랭킹 연동). */
     public void applyAccepted(int points, LocalDateTime at) {
         this.score += points;

@@ -19,9 +19,6 @@ import java.util.List;
 @Slf4j
 public class SubmissionController {
 
-    // 미로그인 폴백 — /submissions/** 는 permitAll 이라 익명 제출이 올 수 있다
-    private static final String ANONYMOUS = "anonymous";
-
     private final SubmissionService submissionService;
     private final CurrentUserProvider currentUserProvider;
 
@@ -52,9 +49,10 @@ public class SubmissionController {
      */
     @PostMapping("")
     public ResponseResult<SubmitResponseDTO> submit(@RequestBody SubmitRequestDTO request) {
-        // 제출자는 로그인 유저 handle 로 기록 — myStatus/토론 접근/mine 필터의 기준값
-        String handle = currentUserProvider.currentHandle();
-        Long submissionId = submissionService.submit(request, handle != null ? handle : ANONYMOUS);
+        // 제출자는 로그인 유저 handle 로 기록 — myStatus/토론 접근/mine 필터의 기준값.
+        // POST 는 SecurityConfig 에서 인증 필수라 익명 제출은 여기까지 오지 않는다.
+        String handle = currentUserProvider.requireHandle();
+        Long submissionId = submissionService.submit(request, handle);
         if (submissionId == null) {
             return ResponseResult.<SubmitResponseDTO>error(null);
         }

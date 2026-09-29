@@ -4,6 +4,7 @@ import com.example.springboot.judge0.Judge0Execution;
 import com.example.springboot.submission.dto.RunRequestDTO;
 import com.example.springboot.submission.dto.RunResultResponseDTO;
 import com.example.springboot.submission.service.RunService;
+import com.example.springboot.user.CurrentUserProvider;
 import com.example.springboot.util.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RunController {
 
     private final RunService runService;
+    private final CurrentUserProvider currentUserProvider;
 
     /**
      * POST /api/v1/runs — 코드 실행 (예제 테스트용, 채점 아님) (연동 문서 §2.9)
@@ -26,7 +28,7 @@ public class RunController {
      */
     @PostMapping("")
     public ResponseResult<RunResultResponseDTO> run(@RequestBody RunRequestDTO request) {
-        Judge0Execution exec = runService.run(request);
+        Judge0Execution exec = runService.run(request, currentUserProvider.requireHandle());
         if (exec == null) {
             return ResponseResult.<RunResultResponseDTO>error(null);
         }

@@ -56,6 +56,18 @@ public class RankingServiceImpl implements RankingService {
         return new RankingDTO(season, entries, myEntry);
     }
 
+    @Override
+    public List<RankingEntryDTO> getCurrentSeasonEntries() {
+        return rankedSeasonEntries(seasonRepository
+                .findFirstByStatusOrderByIdDesc(SeasonStatus.CURRENT)
+                .orElse(null));
+    }
+
+    @Override
+    public RankingEntryDTO getCurrentSeasonEntry(String handle) {
+        return handle == null ? null : findMe(getCurrentSeasonEntries(), handle);
+    }
+
     /** 현재 시즌 점수 내림차순 랭킹 */
     private List<RankingEntryDTO> rankedSeasonEntries(SeasonEntity season) {
         if (season == null) {

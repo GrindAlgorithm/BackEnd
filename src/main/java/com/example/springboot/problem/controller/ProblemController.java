@@ -21,9 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ProblemController {
 
-    // 미로그인 폴백 — /problems/** 는 permitAll 이라 익명 열람이 올 수 있다
-    private static final String ANONYMOUS = "anonymous";
-
     private final ProblemService problemService;
     private final CurrentUserProvider currentUserProvider;
 
@@ -51,9 +48,9 @@ public class ProblemController {
      */
     @PostMapping("/{problemId}/open")
     public ResponseResult<OpenProblemResponseDTO> openProblem(@PathVariable String problemId) {
-        // 풀이 세션은 로그인 유저 handle 로 기록 — 이후 제출·무결성 신호(§2.17)와 조인된다
-        String handle = currentUserProvider.currentHandle();
-        OpenProblemDTO open = problemService.openProblem(problemId, handle != null ? handle : ANONYMOUS);
+        // 풀이 세션은 로그인 유저 handle 로 기록 — 이후 실행·제출·무결성 신호(§2.17)가 이 세션 소유자를 검증한다
+        String handle = currentUserProvider.requireHandle();
+        OpenProblemDTO open = problemService.openProblem(problemId, handle);
         if (open == null) {
             return ResponseResult.<OpenProblemResponseDTO>error(null);
         }

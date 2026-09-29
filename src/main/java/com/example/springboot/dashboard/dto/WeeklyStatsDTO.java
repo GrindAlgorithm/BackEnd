@@ -16,7 +16,7 @@ public class WeeklyStatsDTO {
     private int streakDays;
     private double accuracyRate; // % (0~100)
 
-    /** 제출/활동 도메인 연동 전 기본값 (모두 0) */
+    /** 비로그인·제출 이력 없음 (모두 0) */
     public static WeeklyStatsDTO empty() {
         return new WeeklyStatsDTO(0, 0, 0, 0.0);
     }

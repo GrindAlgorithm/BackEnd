@@ -30,6 +30,10 @@ public class SubmissionEntity {
     @Column(name = "user_handle", nullable = false, length = 64)
     private String userHandle;
 
+    /** 제출이 나온 본문 열람 세션(solve_session.id, B2). 세션 검증 도입 전 제출은 null */
+    @Column(name = "solve_session_id", length = 36)
+    private String solveSessionId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)
     private SubmissionStatus status;
@@ -54,10 +58,11 @@ public class SubmissionEntity {
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
-    public static SubmissionEntity createSubmissionEntity(ProblemEntity problem, String userHandle, SubmissionStatus status,
-                                                          Integer progress, Long timeMs, Long memoryKb,
+    public static SubmissionEntity createSubmissionEntity(ProblemEntity problem, String userHandle, String solveSessionId,
+                                                          SubmissionStatus status, Integer progress, Long timeMs, Long memoryKb,
                                                           LanguageCode language, int codeBytes, LocalDateTime submittedAt) {
-        return new SubmissionEntity(null, problem, userHandle, status, progress, timeMs, memoryKb, language, codeBytes, submittedAt);
+        return new SubmissionEntity(null, problem, userHandle, solveSessionId, status, progress, timeMs, memoryKb,
+                language, codeBytes, submittedAt);
     }
 
     /** 채점 시작: 상태 JUDGING, 진행률 0 */

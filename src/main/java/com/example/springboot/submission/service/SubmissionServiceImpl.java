@@ -3,6 +3,7 @@ package com.example.springboot.submission.service;
 import com.example.springboot.language.service.LanguageService;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
+import com.example.springboot.problem.service.SolveSessionGuard;
 import com.example.springboot.submission.dto.SubmissionDTO;
 import com.example.springboot.submission.dto.SubmitRequestDTO;
 import com.example.springboot.submission.entity.SubmissionEntity;
@@ -28,6 +29,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionGrader submissionGrader;
     private final CurrentUserProvider currentUserProvider;
     private final LanguageService languageService;
+    private final SolveSessionGuard solveSessionGuard;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,12 +65,17 @@ public class SubmissionServiceImpl implements SubmissionService {
             return null;
         }
 
+        // 본문 열람 세션 검증 (B2) — 통과한 세션 id 를 제출에 남겨 열람 시각·무결성 신호와 조인한다
+        String solveSessionId = solveSessionGuard
+                .verify(request.getSolveSessionId(), problem.getProblemId(), userHandle)
+                .getId();
+
         // 언어 검증 + judge0 id 해석 (요건 24 — language 테이블이 단일 소유)
         int judge0LangId = languageService.resolveJudge0Id(request.getLanguage());
 
         int codeBytes = request.getSourceCode().getBytes(StandardCharsets.UTF_8).length;
         SubmissionEntity submission = SubmissionEntity.createSubmissionEntity(
-                problem, userHandle, SubmissionStatus.QUEUED, 0, null, null,
+                problem, userHandle, solveSessionId, SubmissionStatus.QUEUED, 0, null, null,
                 request.getLanguage(), codeBytes, LocalDateTime.now());
         submissionRepository.save(submission); // 자체 트랜잭션으로 즉시 커밋
 
