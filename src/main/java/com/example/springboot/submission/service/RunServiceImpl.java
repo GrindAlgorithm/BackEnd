@@ -26,7 +26,7 @@ public class RunServiceImpl implements RunService {
 
     @Override
     public Judge0Execution run(RunRequestDTO request, String userHandle) {
-        ProblemEntity problem = problemRepository.findByProblemId(request.getProblemId()).orElse(null);
+        ProblemEntity problem = problemRepository.findPublicByProblemId(request.getProblemId()).orElse(null);
         if (problem == null) {
             return null;
         }

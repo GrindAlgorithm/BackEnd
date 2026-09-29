@@ -48,6 +48,7 @@ public class SeasonServiceImpl implements SeasonService {
     public List<SeasonDTO> getSeasons() {
         LocalDate today = LocalDate.now();
         return seasonRepository.findAllByOrderByIdDesc().stream()
+                .filter(season -> season.getStatus().isPublic())
                 .map(season -> SeasonDTO.of(season, today))
                 .toList();
     }
@@ -55,12 +56,19 @@ public class SeasonServiceImpl implements SeasonService {
     @Override
     public SeasonDTO getSeason(Integer seasonId) {
         return seasonRepository.findById(seasonId)
+                .filter(season -> season.getStatus().isPublic())
                 .map(season -> SeasonDTO.of(season, LocalDate.now()))
                 .orElse(null);
     }
 
     @Override
     public List<ProblemSummaryDTO> getSeasonProblems(Integer seasonId) {
+        boolean visible = seasonRepository.findById(seasonId)
+                .map(season -> season.getStatus().isPublic())
+                .orElse(false);
+        if (!visible) {
+            return List.of(); // 없는 시즌 또는 공개 전 시즌
+        }
         return problemRepository.findBySeason_IdOrderByDisplayNoAsc(seasonId).stream()
                 .map(ProblemSummaryDTO::of)
                 .toList();
@@ -192,7 +200,7 @@ public class SeasonServiceImpl implements SeasonService {
     private List<PastSeasonDTO> buildPastSeasons() {
         List<PastSeasonDTO> rows = new ArrayList<>();
         for (SeasonEntity season : seasonRepository.findAllByOrderByIdDesc()) {
-            if (season.getStatus() == SeasonStatus.CURRENT) {
+            if (season.getStatus() == SeasonStatus.CURRENT || !season.getStatus().isPublic()) {
                 continue;
             }
             SeasonRankingEntity champion = seasonRankingRepository

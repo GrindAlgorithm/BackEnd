@@ -42,6 +42,7 @@ services:
       - ./src/main/resources/db/language-seed.sql:/docker-entrypoint-initdb.d/20-language-seed.sql:ro
       - ./src/main/resources/db/problem-testcase-schema.sql:/docker-entrypoint-initdb.d/21-problem-testcase-schema.sql:ro
       - ./src/main/resources/db/problem-testcase-seed.sql:/docker-entrypoint-initdb.d/22-problem-testcase-seed.sql:ro
+      - ./src/main/resources/db/season3-seed.sql:/docker-entrypoint-initdb.d/23-season3-seed.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s

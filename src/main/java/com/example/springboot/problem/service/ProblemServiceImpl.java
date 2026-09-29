@@ -33,14 +33,14 @@ public class ProblemServiceImpl implements ProblemService {
 
     @Override
     public ProblemDetailDTO getProblem(String problemId) {
-        return problemRepository.findByProblemId(problemId)
+        return problemRepository.findPublicByProblemId(problemId)
                 .map(ProblemDetailDTO::of)
                 .orElse(null);
     }
 
     @Override
     public OpenProblemDTO openProblem(String problemId, String userHandle) {
-        ProblemEntity problem = problemRepository.findByProblemId(problemId).orElse(null);
+        ProblemEntity problem = problemRepository.findPublicByProblemId(problemId).orElse(null);
         if (problem == null) {
             return null;
         }

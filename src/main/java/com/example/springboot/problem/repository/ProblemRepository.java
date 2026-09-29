@@ -14,8 +14,13 @@ public interface ProblemRepository extends JpaRepository<ProblemEntity, Long> {
     /** 특정 시즌의 문제 목록 (번호 순) */
     List<ProblemEntity> findBySeason_IdOrderByDisplayNoAsc(Integer seasonId);
 
-    /** URL 키로 문제 단건 조회 (문제 상세) */
-    Optional<ProblemEntity> findByProblemId(String problemId);
+    /**
+     * URL 키로 공개 문제 단건 조회 — 공개 전(UPCOMING) 시즌 문제는 없는 것으로 취급한다.
+     * 유저 요청(상세·본문 열람·실행·제출·토론)은 반드시 이것을 쓴다.
+     */
+    @Query("SELECT p FROM ProblemEntity p LEFT JOIN p.season s WHERE p.problemId = :problemId "
+            + "AND (s IS NULL OR s.status <> com.example.springboot.season.entity.SeasonStatus.UPCOMING)")
+    Optional<ProblemEntity> findPublicByProblemId(@Param("problemId") String problemId);
 
     /** 특정 시즌의 문제 수 (시즌 진행률 totalCount) */
     long countBySeason_Id(Integer seasonId);
