@@ -50,7 +50,8 @@ class DashboardServiceImplTest {
 
     @InjectMocks private DashboardServiceImpl service;
 
-    private final LocalDateTime now = LocalDateTime.now();
+    /** "오늘" 정오 — 실제 현재 시각을 쓰면 자정 직후 실행 시 몇 분 전이 어제가 돼 스트릭·이번주 집계가 틀어진다 */
+    private final LocalDateTime now = LocalDate.now().atTime(12, 0);
     private ProblemEntity conquest;
     private ProblemEntity distance;
     private ProblemEntity forced;
