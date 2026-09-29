@@ -46,7 +46,7 @@ class UserProfileServiceImplTest {
     }
 
     private SubmissionEntity submission(ProblemEntity p, SubmissionStatus status, LocalDateTime at) {
-        return SubmissionEntity.createSubmissionEntity(p, "park", status, null, null, null,
+        return SubmissionEntity.createSubmissionEntity(p, "park", null, status, null, null, null,
                 LanguageCode.JAVA11, 100, at);
     }
 
@@ -61,7 +61,8 @@ class UserProfileServiceImplTest {
     void statsCountDistinctSolvedProblemsAndAccuracy() {
         ProblemEntity a = problem("conquest", "C");
         ProblemEntity b = problem("distance", "D");
-        LocalDateTime now = LocalDateTime.now();
+        // "오늘" 정오 기준 — 실제 현재 시각 기준이면 자정 직후(예: UTC CI)에 몇 시간 전이 어제가 돼 스트릭이 틀어진다
+        LocalDateTime now = LocalDate.now().atTime(12, 0);
         // a: 오답 1 + 정답 2(재제출) / b: 오답 1 → solved 1, 제출 4, 정답 2건 → 정답률 50.0
         List<SubmissionEntity> subs = List.of(
                 submission(a, SubmissionStatus.ACCEPTED, now.minusHours(1)),

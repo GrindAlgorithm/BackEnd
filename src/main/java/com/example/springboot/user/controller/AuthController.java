@@ -1,5 +1,6 @@
 package com.example.springboot.user.controller;
 
+import com.example.springboot.ranking.service.RankingService;
 import com.example.springboot.user.dto.LoginRequestDTO;
 import com.example.springboot.user.dto.MeResponseDTO;
 import com.example.springboot.user.dto.SignupRequestDTO;
@@ -35,6 +36,7 @@ import java.util.List;
 public class AuthController {
 
     private final AuthService authService;
+    private final RankingService rankingService;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     /** POST /auth/signup — 즉시 가입 후 바로 로그인 상태로 만든다. */
@@ -43,7 +45,7 @@ public class AuthController {
                                                 HttpServletRequest req, HttpServletResponse res) {
         UserDTO user = authService.signup(request);
         establishSession(user, req, res);
-        return ResponseResult.success(MeResponseDTO.of(user));
+        return ResponseResult.success(MeResponseDTO.of(user, null)); // 신규 가입자는 항상 시즌 미배치
     }
 
     /** POST /auth/login — 이메일/비밀번호 로그인, 세션 발급. */
@@ -56,7 +58,7 @@ public class AuthController {
         if (log.isInfoEnabled()) {
             log.info("login success handle={}", user.getHandle());
         }
-        return ResponseResult.success(MeResponseDTO.of(user));
+        return ResponseResult.success(toMe(user));
     }
 
     /** POST /auth/logout — 세션 무효화. 본문 없음(204). */
@@ -71,7 +73,12 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseResult<MeResponseDTO> me(Authentication authentication) {
         UserDTO user = authService.getByEmail(authentication.getName());
-        return ResponseResult.success(MeResponseDTO.of(user));
+        return ResponseResult.success(toMe(user));
+    }
+
+    /** 헤더·홈 히어로의 시즌 티어/점수/순위 — 프로필(§2.15)과 같은 현재 시즌 랭킹 기준 */
+    private MeResponseDTO toMe(UserDTO user) {
+        return MeResponseDTO.of(user, rankingService.getCurrentSeasonEntry(user.getHandle()));
     }
 
     /**

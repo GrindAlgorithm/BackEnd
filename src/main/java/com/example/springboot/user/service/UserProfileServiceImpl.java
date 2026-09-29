@@ -1,5 +1,6 @@
 package com.example.springboot.user.service;
 
+import com.example.springboot.common.activity.ActivityStats;
 import com.example.springboot.dashboard.dto.ActivityCalendarDTO;
 import com.example.springboot.dashboard.dto.ActivityDayDTO;
 import com.example.springboot.problem.entity.ProblemEntity;
@@ -59,13 +60,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 submissionRepository.findByUserHandleOrderBySubmittedAtDesc(handle);
 
         // 문제별 최초 정답 시각 — solvedCount·recentSolved·잔디 카운트의 공통 기준
-        Map<ProblemEntity, LocalDateTime> firstSolvedAt = submissions.stream()
-                .filter(s -> s.getStatus() == SubmissionStatus.ACCEPTED)
-                .collect(Collectors.toMap(
-                        SubmissionEntity::getProblem,
-                        SubmissionEntity::getSubmittedAt,
-                        (a, b) -> a.isBefore(b) ? a : b,
-                        LinkedHashMap::new));
+        Map<ProblemEntity, LocalDateTime> firstSolvedAt = ActivityStats.firstSolvedAt(submissions);
 
         UserProfileDTO profile = new UserProfileDTO();
         profile.setHandle(user.getHandle());
@@ -124,9 +119,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         long acceptedCount = submissions.stream()
                 .filter(s -> s.getStatus() == SubmissionStatus.ACCEPTED)
                 .count();
-        double accuracyRate = submissionCount == 0
-                ? 0.0
-                : Math.round(acceptedCount * 1000.0 / submissionCount) / 10.0;
+        double accuracyRate = ActivityStats.percent(acceptedCount, submissionCount);
         double avgAttempts = solvedCount == 0
                 ? 0.0
                 : Math.round(submissionCount * 10.0 / solvedCount) / 10.0;
@@ -135,33 +128,11 @@ public class UserProfileServiceImpl implements UserProfileService {
         Set<LocalDate> activeDates = submissions.stream()
                 .map(s -> s.getSubmittedAt().toLocalDate())
                 .collect(Collectors.toCollection(TreeSet::new));
-        int streakDays = currentStreak(activeDates, LocalDate.now());
-        int longestStreakDays = longestStreak(activeDates);
+        int streakDays = ActivityStats.currentStreak(activeDates, LocalDate.now());
+        int longestStreakDays = ActivityStats.longestStreak(activeDates);
 
         return new UserStatsDTO(solvedCount, submissionCount, accuracyRate, avgAttempts,
                 streakDays, longestStreakDays);
-    }
-
-    private int currentStreak(Set<LocalDate> activeDates, LocalDate today) {
-        LocalDate cursor = activeDates.contains(today) ? today : today.minusDays(1);
-        int streak = 0;
-        while (activeDates.contains(cursor)) {
-            streak++;
-            cursor = cursor.minusDays(1);
-        }
-        return streak;
-    }
-
-    private int longestStreak(Set<LocalDate> sortedDates) {
-        int longest = 0;
-        int run = 0;
-        LocalDate prev = null;
-        for (LocalDate d : sortedDates) {
-            run = (prev != null && prev.plusDays(1).equals(d)) ? run + 1 : 1;
-            longest = Math.max(longest, run);
-            prev = d;
-        }
-        return longest;
     }
 
     /** 최근 52주 잔디 — count 는 그날 처음 해결한 문제 수 (§2.4 ActivityDay 의미와 동일) */
@@ -182,7 +153,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         int total = 0;
         for (LocalDate d = from; !d.isAfter(today); d = d.plusDays(1)) {
             int count = countByDate.getOrDefault(d, 0);
-            days.add(new ActivityDayDTO(d.toString(), count, jandiLevel(count)));
+            days.add(new ActivityDayDTO(d.toString(), count, ActivityStats.jandiLevel(count)));
             if (count > 0) {
                 activeDays++;
                 total += count;
@@ -190,14 +161,6 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
         double avgPerDay = activeDays == 0 ? 0.0 : Math.round(total * 10.0 / activeDays) / 10.0;
         return new ActivityCalendarDTO(days, activeDays, avgPerDay);
-    }
-
-    private int jandiLevel(int count) {
-        if (count <= 0) return 0;
-        if (count == 1) return 1;
-        if (count == 2) return 2;
-        if (count <= 4) return 3;
-        return 4;
     }
 
     private List<RecentSolvedItemDTO> buildRecentSolved(Map<ProblemEntity, LocalDateTime> firstSolvedAt) {

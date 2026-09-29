@@ -30,7 +30,7 @@ public class SeasonProgressDTO {
     private String nextProblemId; // "다음 시즌 문제 풀기" 대상 (전부 클리어 시 null)
 
     /**
-     * @param solvedCount   클리어 수 (인증/제출 연동 전에는 0)
+     * @param solvedCount   클리어 수 (비로그인이면 0)
      * @param nextProblemId 다음 풀 문제 (없으면 null)
      */
     public static SeasonProgressDTO of(SeasonEntity season, LocalDate today,

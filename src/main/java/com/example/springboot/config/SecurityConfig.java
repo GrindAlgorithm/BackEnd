@@ -1,23 +1,29 @@
 package com.example.springboot.config;
 
 import com.example.springboot.user.CustomOAuth2UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Configuration
@@ -47,11 +53,20 @@ public class SecurityConfig {
                 // REST + 세션 쿠키 인증: 폼 로그인/기본 인증 비활성, 미인증은 401(계약 §1.4)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+                .exceptionHandling(e -> e.authenticationEntryPoint(this::writeUnauthorized));
 
         http
                 .authorizeHttpRequests((auth) -> auth
+                        // 풀이 세션 발급·실행·제출은 로그인 필수 — 아래 permitAll 보다 먼저 매칭돼야 한다.
+                        // 세션 만료 후 제출이 익명(anonymous)으로 조용히 기록돼 점수가 유실되던 문제 차단.
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/problems/*/open",
+                                "/api/v1/runs",
+                                "/api/v1/submissions"
+                        ).authenticated()
                         .requestMatchers(
+                                // 컨트롤러 예외·404·405 가 포워드되는 경로. 막으면 모든 에러가 빈 401로 위장된다
+                                "/error",
                                 "/api/v1/example",
                                 // 인증 — 로그인/회원가입/로그아웃(미인증 접근 허용). /me 는 인증 필요
                                 "/api/v1/auth/**",
@@ -62,12 +77,9 @@ public class SecurityConfig {
                                 "/api/v1/seasons/**",
                                 // 홈 대시보드 — 인증 연동 전까지 접근 허용(추후 authenticated 로 전환)
                                 "/api/v1/dashboard",
-                                // 채점 현황/제출 — 문제 탭 + IDE 제출·폴링(연동 문서 §2.10~2.12)
+                                // 채점 현황·폴링 — 문제 탭(연동 문서 §2.11~2.12). 제출(POST)은 위에서 인증 필수
                                 "/api/v1/submissions/**",
-                                // 코드 실행 (IDE 예제 테스트, 연동 문서 §2.9)
-                                "/api/v1/runs/**",
-                                // 문제 상세(본문 미포함) — 연동 문서 §2.7.
-                                // ⚠ 추후 POST /problems/{id}/open(본문) 추가 시 GET만 허용하도록 좁힐 것
+                                // 문제 상세(본문 미포함) — 연동 문서 §2.7. 본문 열람(POST open)은 위에서 인증 필수
                                 "/api/v1/problems/**",
                                 // 랭킹 탭 — 연동 문서 §2.13
                                 "/api/v1/rankings/**",
@@ -90,6 +102,16 @@ public class SecurityConfig {
         }
 
         return http.build();
+    }
+
+    /** 미인증 → 401 + 계약 §1.4 에러 봉투. 본문이 있어야 프론트가 원인을 그대로 보여 줄 수 있다. */
+    private void writeUnauthorized(HttpServletRequest request, HttpServletResponse response,
+                                   AuthenticationException ex) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(
+                "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"로그인이 필요합니다. 다시 로그인해 주세요\"}}");
     }
 
     @Bean

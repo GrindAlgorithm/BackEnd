@@ -9,6 +9,7 @@ import com.example.springboot.problem.repository.ProblemTestcaseRepository;
 import com.example.springboot.submission.entity.SubmissionStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,9 @@ public class SubmissionGrader {
     private final ProblemSampleRepository problemSampleRepository;
     private final SubmissionGradingTx tx;
 
+    /** 정답 반영 트랜잭션 재시도 횟수 — 락 대기 초과·교착 같은 일시적 실패로 정답이 오답 처리되지 않게 */
+    private static final int ACCEPT_ATTEMPTS = 3;
+
     @Async
     public void grade(long submissionId, String problemId, int judge0LangId,
                       int cpuTimeLimitSec, int memoryLimitKb, String sourceCode) {
@@ -47,7 +51,7 @@ public class SubmissionGrader {
                 // 채점 근거가 전혀 없는 문제 — 콘텐츠 누락. 정답 처리하되 명확히 남긴다
                 log.warn("grade: 테스트케이스·예제 모두 없음 — 무검증 ACCEPTED problemId={} submissionId={}",
                         problemId, submissionId);
-                tx.finishAccepted(submissionId, 0L, 0L);
+                finishAcceptedWithRetry(submissionId, 0L, 0L);
                 return;
             }
 
@@ -77,7 +81,7 @@ public class SubmissionGrader {
                 tx.updateProgress(submissionId, (int) (done * 100L / total), maxTimeMs, maxMemoryKb);
             }
 
-            tx.finishAccepted(submissionId, maxTimeMs, maxMemoryKb);
+            finishAcceptedWithRetry(submissionId, maxTimeMs, maxMemoryKb);
             if (log.isInfoEnabled()) {
                 log.info("grade done submissionId={} ACCEPTED ({} cases)", submissionId, total);
             }
@@ -88,6 +92,22 @@ public class SubmissionGrader {
                 tx.finishFailed(submissionId, SubmissionStatus.RUNTIME_ERROR, maxTimeMs, maxMemoryKb);
             } catch (Exception ex) {
                 log.error("grade 실패 종결마저 실패 submissionId={}", submissionId, ex);
+            }
+        }
+    }
+
+    /** 정답 종결은 일시적 동시성 실패에 한해 재시도한다 (트랜잭션 전체가 롤백되므로 재실행해도 안전) */
+    private void finishAcceptedWithRetry(long submissionId, long timeMs, long memoryKb) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                tx.finishAccepted(submissionId, timeMs, memoryKb);
+                return;
+            } catch (ConcurrencyFailureException e) {
+                if (attempt >= ACCEPT_ATTEMPTS) {
+                    throw e;
+                }
+                log.warn("finishAccepted 재시도 {}/{} submissionId={} — {}",
+                        attempt, ACCEPT_ATTEMPTS, submissionId, e.getMessage());
             }
         }
     }
