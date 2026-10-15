@@ -1,5 +1,6 @@
 package com.example.springboot.ranking.service;
 
+import com.example.springboot.friend.repository.FriendshipRepository;
 import com.example.springboot.ranking.dto.RankingDTO;
 import com.example.springboot.ranking.dto.RankingEntryDTO;
 import com.example.springboot.ranking.dto.RankingScope;
@@ -19,8 +20,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +34,7 @@ public class RankingServiceImpl implements RankingService {
 
     private final SeasonRankingRepository rankingRepository;
     private final SeasonRepository seasonRepository;
+    private final FriendshipRepository friendshipRepository;
     private final CurrentUserProvider currentUserProvider;
 
     @Override
@@ -40,20 +44,39 @@ public class RankingServiceImpl implements RankingService {
                 .orElse(null);
         SeasonDTO season = current == null ? null : SeasonDTO.of(current, LocalDate.now());
 
+        // 로그인 유저의 handle. 비로그인이면 null(계약 §2.13). friends 스코프 필터에도 쓴다.
+        String myHandle = currentUserProvider.currentHandle();
+
         List<RankingEntryDTO> entries = switch (scope) {
             case SEASON -> rankedSeasonEntries(current);
             case OVERALL -> rankedOverallEntries();
-            // 친구 관계 API 미정(연동 문서 §2.13) — 목록은 비우고 내 순위만 채운다
-            case FRIENDS -> List.of();
+            case FRIENDS -> friendEntries(current, myHandle);
         };
 
-        // 로그인 유저의 handle 로 내 순위를 찾는다. 비로그인이면 null(계약 §2.13).
-        String myHandle = currentUserProvider.currentHandle();
         RankingEntryDTO myEntry = myHandle == null ? null : findMe(entries, myHandle);
+        // friends 목록엔 보통 내가 없으므로(나를 친구로 추가하지 않음) 내 순위는 시즌 랭킹에서 채운다
         if (myEntry == null && myHandle != null && scope == RankingScope.FRIENDS) {
             myEntry = findMe(rankedSeasonEntries(current), myHandle);
         }
         return new RankingDTO(season, entries, myEntry);
+    }
+
+    /**
+     * 친구 랭킹 — 내가 추가한 친구 handle 들만 현재 시즌 랭킹에서 추려서 반환한다.
+     * rank 는 시즌 전체 기준 순위를 유지한다(필터 후 재부여하지 않음). 비로그인·시즌 없음·친구 없음이면 빈 목록.
+     */
+    private List<RankingEntryDTO> friendEntries(SeasonEntity season, String myHandle) {
+        if (season == null || myHandle == null) {
+            return List.of();
+        }
+        List<String> friendHandles = friendshipRepository.findFriendHandlesByOwnerHandle(myHandle);
+        if (friendHandles.isEmpty()) {
+            return List.of();
+        }
+        Set<String> friends = new HashSet<>(friendHandles);
+        return rankedSeasonEntries(season).stream()
+                .filter(e -> friends.contains(e.getHandle()))
+                .collect(Collectors.toList());
     }
 
     @Override
