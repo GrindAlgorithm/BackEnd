@@ -21,7 +21,7 @@ public class RankingController {
 
     /**
      * GET /api/v1/rankings?scope={season|overall|friends} — 랭킹 탭 (연동 문서 §2.13)
-     * season(기본): 현재 시즌 점수 순 / overall: 전체 누적 / friends: 친구(미구현, 내 순위만).
+     * season(기본): 현재 시즌 점수 순 / overall: 전체 누적 / friends: 내가 추가한 친구들의 시즌 랭킹.
      * entries 는 순위 순, myEntry 는 목록에 없어도 채운다.
      */
     @GetMapping("")
