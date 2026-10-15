@@ -16,6 +16,11 @@ WorkingDirectory=/opt/grindalgo
 Environment=JAVA_OPTS=-Xms128m -Xmx512m -XX:+UseSerialGC -XX:MaxMetaspaceSize=192m
 Environment=SPRING_PROFILES_ACTIVE=prod
 
+# 비밀 환경변수 — OAuth client-id/secret 등. grindalgo-deploy 가 배포 시 설치한다.
+# application-prod.yml 의 ${CLIENT_ID_GITHUB} 같은 자리를 채운다. 앞의 '-' 는
+# 파일이 아직 없어도 기동을 막지 않게 한다(최초 배포 전 등).
+EnvironmentFile=-/opt/grindalgo/grindalgo.env
+
 ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/grindalgo/backend.jar
 
 # 기동이 오래 걸려도(1GB 라 30초 이상 걸릴 수 있다) 죽이지 않는다.

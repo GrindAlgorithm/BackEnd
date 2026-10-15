@@ -23,17 +23,21 @@ spring:
   # 소셜 로그인 — 콜백 주소를 배포 도메인으로 등록해야 한다.
   #   GitHub  https://<도메인>/login/oauth2/code/github
   #   Google  https://<도메인>/login/oauth2/code/google
+  #
+  # client-id/secret 은 파일에 직접 쓰지 않고 환경변수로 주입한다 — GitHub Actions 의
+  # Organization Secrets(CLIENT_ID_GITHUB 등)를 배포 시 서버의 grindalgo.env 로 내려
+  # systemd 가 EnvironmentFile 로 읽는다. (CI: deploy.yml → grindalgo-deploy → systemd)
   security:
     oauth2:
       client:
         registration:
           github:
-            client-id: "GitHub OAuth App 의 Client ID"
-            client-secret: "GitHub OAuth App 의 Client Secret"
+            client-id: ${CLIENT_ID_GITHUB}
+            client-secret: ${CLIENT_SECRET_GITHUB}
             scope: read:user, user:email
           google:
-            client-id: "Google OAuth 클라이언트 ID"
-            client-secret: "Google OAuth 클라이언트 시크릿"
+            client-id: ${CLIENT_ID_GOOGLE}
+            client-secret: ${CLIENT_SECRET_GOOGLE}
             scope: email, profile
 
 judge0:
