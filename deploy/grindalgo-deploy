@@ -13,6 +13,8 @@ set -euo pipefail
 BACKEND_JAR=/opt/grindalgo/backend.jar
 PREV_JAR=/opt/grindalgo/backend.prev.jar
 STAGED_JAR=/tmp/backend.jar
+STAGED_ENV=/tmp/grindalgo.env
+BACKEND_ENV=/opt/grindalgo/grindalgo.env
 STAGED_DIST=/tmp/grindalgo-dist.tgz
 WEB_ROOT=/var/www/grindalgo
 
@@ -32,6 +34,15 @@ deploy_backend() {
   log "설치"
   install -o grindalgo -g grindalgo -m 640 "$STAGED_JAR" "$BACKEND_JAR"
   rm -f "$STAGED_JAR"
+
+  # 비밀 환경변수(OAuth client-id/secret 등) — CI 가 함께 올렸을 때만 교체한다.
+  # systemd 유닛이 EnvironmentFile 로 읽어 application-prod.yml 의 ${...} 를 채운다.
+  # 이번 배포에 없으면(선택) 기존 파일을 그대로 두어, env 없이 올려도 설정이 날아가지 않게 한다.
+  if [ -f "$STAGED_ENV" ]; then
+    log "환경변수 파일 설치"
+    install -o grindalgo -g grindalgo -m 640 "$STAGED_ENV" "$BACKEND_ENV"
+    rm -f "$STAGED_ENV"
+  fi
 
   log "재기동"
   systemctl restart grindalgo-backend

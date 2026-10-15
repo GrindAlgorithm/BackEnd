@@ -118,9 +118,13 @@ sudo netfilter-persistent save
 로컬에서 `application-prod.yml.example` 을 복사해 실제 값을 채운 뒤 올립니다.
 DB 비밀번호와 judge0 토큰은 VM #1 의 `application-vm.yml` 과 같은 값입니다.
 
+OAuth client-id/secret 은 이 파일에 직접 쓰지 않습니다 — 배포 시 GitHub Actions 의
+Organization Secrets 가 서버의 `/opt/grindalgo/grindalgo.env` 로 내려오고 systemd 가
+`EnvironmentFile` 로 읽어 `application-prod.yml` 의 `${CLIENT_ID_GITHUB}` 등을 채웁니다(§6).
+
 ```bash
 cp src/main/resources/application-prod.yml.example /tmp/application-prod.yml
-# 편집기로 비밀번호·토큰·OAuth 값을 채운다
+# 편집기로 DB 비밀번호·judge0 토큰을 채운다 (OAuth 값은 env 로 주입되므로 건드리지 않는다)
 
 scp /tmp/application-prod.yml ubuntu@<APP_IP>:/tmp/
 scp deploy/grindalgo-backend.service ubuntu@<APP_IP>:/tmp/
@@ -198,14 +202,21 @@ git checkout staging && git merge dev && git push origin staging
 push 하면 `.github/workflows/deploy.yml` 이 CI 와 같은 조건으로 테스트한 뒤, 통과했을 때만
 서버에 올립니다. 두 저장소가 각자 배포하므로 **API 가 바뀌는 변경은 백엔드를 먼저** 올리세요.
 
-저장소마다 Secrets 두 개가 필요합니다 — Settings → Secrets and variables → Actions.
+배포에 필요한 Secrets — Settings → Secrets and variables → Actions.
+OAuth 4개는 여러 저장소가 공유하므로 **Organization Secrets** 로 두고 이 저장소에 접근을 허용하면 됩니다.
 
 | 이름 | 값 |
 |---|---|
 | `DEPLOY_SSH_KEY` | 배포 계정 개인키 전체 (`-----BEGIN` 부터 `-----END` 줄까지) |
 | `APP_HOST` | 앱 서버 주소 |
+| `CLIENT_ID_GITHUB` | GitHub OAuth App 의 Client ID |
+| `CLIENT_SECRET_GITHUB` | GitHub OAuth App 의 Client Secret |
+| `CLIENT_ID_GOOGLE` | Google OAuth 클라이언트 ID |
+| `CLIENT_SECRET_GOOGLE` | Google OAuth 클라이언트 시크릿 |
 
 개인키는 저장소에 절대 넣지 마세요. Secrets 는 로그에 찍혀도 자동으로 가려집니다.
+OAuth 4개는 배포 시 `deploy.yml` 이 env 파일로 묶어 서버에 올리고, `grindalgo-deploy` 가
+`/opt/grindalgo/grindalgo.env` 로 설치합니다. 값을 바꾸면 **staging 에 다시 push(또는 workflow 수동 실행)** 해야 서버에 반영됩니다.
 
 ## 7. 도메인 연결
 
