@@ -7,9 +7,9 @@ Oracle Cloud **Always Free** 범위 안에서 백엔드와 프론트엔드를 �
                         │  http(s)
                         ▼
         ┌───────────────────────────────┐                    ┌──────────────────────────┐
-        │ VM #2 앱 서버 (64.110.117.207) │   SSH 터널(autossh) │ VM #1 DB (129.225.146.170)│
-        │  Caddy :80/:443               │═══════════════════▶│  MariaDB  127.0.0.1:3306 │
-        │   ├ /api/*  → :8080           │  10.0.0.46          │  judge0   127.0.0.1:2358 │
+        │ VM #2 앱 서버 (161.33.29.1)    │   SSH 터널(autossh) │ VM #1 DB (129.225.146.170)│
+        │  Caddy :80/:443               │═══════════════════▶│  MariaDB           :3306 │
+        │   ├ /api/*  → :8080           │  10.0.0.46          │  judge0            :2358 │
         │   └ 그 외   → 정적 프론트      │      → 10.0.0.186   │                          │
         │  Spring Boot 127.0.0.1:8080   │                    └──────────────────────────┘
         └───────────────────────────────┘
@@ -70,10 +70,37 @@ sudo systemctl daemon-reload && sudo systemctl enable --now grindalgo-tunnel
 ss -tln | grep -E ':3306|:2358'    # 127.0.0.1 에 두 포트가 떠 있으면 성공
 ```
 
-DB VM 쪽은 MariaDB 와 judge0 를 `127.0.0.1` 에 그대로 두면 되고, 인터넷에도 계속 닫혀 있습니다.
-백엔드는 `127.0.0.1:3306` · `127.0.0.1:2358` 로 붙습니다(`application-prod.yml` 참고).
+DB VM 의 MariaDB 와 judge0 는 `127.0.0.1` 과 사설 IP `10.0.0.186` 두 곳에 바인딩되어 있고,
+iptables 가 `10.0.0.0/24` 에서 오는 접속만 받습니다. 인터넷에는 계속 닫혀 있습니다.
+사설망 경로가 열려 있어 터널 없이 `10.0.0.186:3306` 으로 직접 붙는 것도 되지만, 운영은 위
+autossh 터널을 쓰고 백엔드는 `127.0.0.1:3306` · `127.0.0.1:2358` 로 붙습니다
+(`application-prod.yml` 참고). 터널 키가 `permitopen` 으로 두 포트만 허용해 접근 범위를 한 번
+더 좁혀 주기 때문입니다.
 
-> 로컬 개발(`run-vm.ps1`)은 이 구성과 무관하게 그대로 동작합니다.
+DB VM 의 방화벽은 아래 상태입니다(`sudo iptables -S INPUT`).
+
+```
+-A INPUT -s 10.0.0.0/24 -p tcp --dport 2358 -j ACCEPT       # judge0  — 사설 서브넷만
+-A INPUT -s 10.0.0.0/24 -p tcp --dport 3306 -j ACCEPT       # MariaDB — 사설 서브넷만
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport 22 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+```
+
+judge0 는 도커로 뜨는데, 도커는 포트를 퍼블리시할 때 `INPUT` 을 건너뛰고 `nat` 테이블에
+DNAT 을 직접 넣습니다. 그래서 `127.0.0.1:2358` 로 묶어도 라우팅된 패킷이 밖에서 닿을 수
+있어, 이를 막는 규칙이 `nat` 에 하나 더 들어가 있습니다.
+
+```
+-A PREROUTING -d 127.0.0.1/32 ! -i lo -p tcp --dport 2358 -j DROP
+```
+
+규칙을 바꿨다면 `sudo netfilter-persistent save` 로 `/etc/iptables/rules.v4` 에 영구화합니다.
+
+> 로컬 개발(`run-vm.ps1`)은 이 구성과 무관하게 그대로 동작합니다. 내 PC 는 `10.0.0.0/24`
+> 밖이라 SSH 터널이 계속 필요합니다.
 
 ## 3. VM #2 초기 세팅
 
@@ -220,19 +247,34 @@ OAuth 4개는 배포 시 `deploy.yml` 이 env 파일로 묶어 서버에 올리�
 
 ## 7. 도메인 연결
 
-도메인을 사시면 A 레코드를 `<APP_IP>` 로 지정하고, `/etc/caddy/Caddyfile` 첫 줄의
-`grindalgo.example.com` 을 실제 도메인으로 바꾼 뒤 `sudo systemctl reload caddy` 하면
-인증서가 자동 발급됩니다.
+현재 staging 은 **`https://grindalgo.duckdns.org`** 입니다(DuckDNS 무료 서브도메인 → `161.33.29.1`).
 
-**도메인 전에 IP 로 먼저 띄우려면** Caddyfile 첫 줄을 `:80 {` 으로 바꾸세요.
-HTTP 로 동작하며, 이때는 `application-prod.yml` 의 `cookie.secure` 를 잠시 `false` 로 두어야
-로그인이 됩니다. 도메인을 붙일 때 둘 다 되돌리세요.
+`/etc/caddy/Caddyfile` 첫 줄을 도메인으로 두고 `sudo systemctl reload caddy` 하면 Caddy 가
+Let's Encrypt 인증서를 자동 발급·갱신하고, http 접속은 https 로 308 리다이렉트합니다.
+발급은 HTTP-01 챌린지라 **80 이 열려 있어야** 하고, 서비스에는 443 이 필요합니다
+(Security List·iptables 둘 다 — 3장 참고). 이때 `application-prod.yml` 의 `cookie.secure` 는 `true` 입니다.
 
-소셜 로그인을 쓰신다면 GitHub·Google 개발자 콘솔의 콜백 주소도 도메인 기준으로 등록해야 합니다.
+앱 서버 IP 는 Ephemeral 입니다(무료 Reserved IP 1개는 DB VM 이 사용 중). 그래서 앱 서버가
+5분마다 DuckDNS 에 자기 공인 IP 를 알립니다. IP 가 바뀌어도 도메인이 그대로라 인증서·OAuth 콜백은
+손댈 필요가 없습니다.
+
+| 파일 | 내용 |
+|---|---|
+| `/etc/duckdns/token` | DuckDNS 토큰(root 600, 저장소에 넣지 않음) |
+| `/usr/local/bin/duckdns-update` | `ip=` 를 비워 호출 → DuckDNS 가 요청 IP 로 갱신. 실패 시 `logger -t duckdns` |
+| `/etc/cron.d/duckdns` | `*/5 * * * * root /usr/local/bin/duckdns-update` |
+
+수동 실행은 `sudo duckdns-update`, 실패 기록은 `journalctl -t duckdns` 로 봅니다.
+
+**도메인 없이 IP 로 띄우려면** Caddyfile 첫 줄을 `:80 {` 으로 바꾸세요.
+HTTP 로 동작하며, 이때는 `cookie.secure` 를 `false` 로 두어야 로그인이 됩니다
+(브라우저가 http 에서는 Secure 쿠키를 저장하지 않습니다). 도메인을 붙일 때 둘 다 되돌리세요.
+
+소셜 로그인 콜백 주소는 GitHub·Google 개발자 콘솔에 아래처럼 등록합니다.
 
 ```
-https://<도메인>/login/oauth2/code/github
-https://<도메인>/login/oauth2/code/google
+https://grindalgo.duckdns.org/login/oauth2/code/github
+https://grindalgo.duckdns.org/login/oauth2/code/google
 ```
 
 ---

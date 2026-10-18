@@ -8,7 +8,7 @@
 # 그러면 HTTPS 없이 http://<VM IP>/ 로 접속된다. 이때 세션 쿠키의 secure 옵션은
 # application-prod.yml 에서 잠시 false 로 두어야 로그인이 동작한다.
 
-grindalgo.example.com {
+grindalgo.duckdns.org {
 	encode zstd gzip
 
 	# API·소셜 로그인은 백엔드로 넘긴다. 그 외는 정적 파일.
