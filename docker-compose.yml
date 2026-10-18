@@ -45,6 +45,7 @@ services:
       - ./src/main/resources/db/season3-seed.sql:/docker-entrypoint-initdb.d/23-season3-seed.sql:ro
       - ./src/main/resources/db/friendship-schema.sql:/docker-entrypoint-initdb.d/24-friendship-schema.sql:ro
       - ./src/main/resources/db/friendship-seed.sql:/docker-entrypoint-initdb.d/25-friendship-seed.sql:ro
+      - ./src/main/resources/db/friend-request-schema.sql:/docker-entrypoint-initdb.d/26-friend-request-schema.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s

@@ -1,5 +1,7 @@
 package com.example.springboot.user.controller;
 
+import com.example.springboot.friend.dto.FriendStatus;
+import com.example.springboot.friend.service.FriendService;
 import com.example.springboot.user.CurrentUserProvider;
 import com.example.springboot.user.dto.TitleUpdateRequestDTO;
 import com.example.springboot.user.dto.UserProfileDTO;
@@ -26,6 +28,7 @@ public class UserProfileController {
 
     private final UserProfileService userProfileService;
     private final CurrentUserProvider currentUserProvider;
+    private final FriendService friendService;
 
     /** GET /users/{handle} — 유저 프로필. 미로그인 열람 허용(백준식), isMe 는 세션 기준. */
     @GetMapping("/users/{handle}")
@@ -36,10 +39,17 @@ public class UserProfileController {
             return ResponseResult.<UserProfileResponseDTO>error(null);
         }
 
+        UserProfileResponseDTO response = UserProfileResponseDTO.of(profile);
+        if (viewerHandle != null) {
+            FriendStatus friend = friendService.statusOf(viewerHandle, profile.getHandle());
+            response.setFriendRelation(friend.relation());
+            response.setFriendRequestId(friend.requestId());
+        }
+
         if (log.isInfoEnabled()) {
             log.info("getProfile Controller Success : handle={}, isMe={}", handle, profile.isMe());
         }
-        return ResponseResult.success(UserProfileResponseDTO.of(profile));
+        return ResponseResult.success(response);
     }
 
     /** PUT /me/title — 대표 칭호 선택/해제. 성공 204, 미보유 칭호 지정은 400 (§2.16). */

@@ -3,7 +3,10 @@ package com.example.springboot.submission.repository;
 import com.example.springboot.submission.entity.SubmissionEntity;
 import com.example.springboot.submission.entity.SubmissionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,4 +43,13 @@ public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Lo
 
     /** 특정 유저의 전체 제출(최신순) — 프로필 통계/잔디/최근 목록(§2.15) */
     List<SubmissionEntity> findByUserHandleOrderBySubmittedAtDesc(String userHandle);
+
+    /**
+     * 유저별 요약 — [handle, 해결한 문제 수, 마지막 제출 시각]. 친구 화면·검색의 FriendUser(§2.18)용.
+     * 제출이 없는 handle 은 결과에 없다.
+     */
+    @Query("SELECT s.userHandle, COUNT(DISTINCT CASE WHEN s.status = :accepted THEN s.problem.id END), MAX(s.submittedAt) "
+            + "FROM SubmissionEntity s WHERE s.userHandle IN :handles GROUP BY s.userHandle")
+    List<Object[]> summarizeByHandles(@Param("handles") Collection<String> handles,
+                                      @Param("accepted") SubmissionStatus accepted);
 }
