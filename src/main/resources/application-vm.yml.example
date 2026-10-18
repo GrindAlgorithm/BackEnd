@@ -1,7 +1,8 @@
 # Oracle Cloud VM MariaDB + Judge0 접속 프로필 템플릿 — application-vm.yml 로 복사해서 사용.
 # application-vm.yml 은 .gitignore 대상이라 커밋되지 않는다.
 #
-# VM의 MariaDB(3306)와 Judge0(2358)는 127.0.0.1 에만 바인딩(외부 미노출) — 접속 전 SSH 터널을 먼저 연다:
+# VM의 MariaDB(3306)와 Judge0(2358)는 인터넷에 닫혀 있고 VCN 사설 서브넷(10.0.0.0/24)에서만
+# 허용된다. 내 PC 는 그 밖이라 접속 전 SSH 터널을 먼저 연다:
 #   ssh -i <SSH_개인키> -N -L 13307:127.0.0.1:3306 -L 12358:127.0.0.1:2358 ubuntu@<VM_공인IP>
 # 실행: BackEnd 에서 ./run-vm.ps1 (Windows) 또는 ./run-vm.sh — 터널 개설부터 기동까지 처리한다.
 # 접속 절차와 팀원 온보딩은 docs/DEV_ENV.md 참고.
