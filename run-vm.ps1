@@ -2,8 +2,9 @@
 #
 #   PS> .\run-vm.ps1
 #
-# VM 의 MariaDB(3306)와 judge0(2358)은 VM 내부 127.0.0.1 에만 바인딩되어 있어
-# 외부에서 직접 붙을 수 없다. 이 스크립트가 SSH 터널을 먼저 열고 백엔드를 기동한다.
+# VM 의 MariaDB(3306)와 judge0(2358)은 인터넷에 닫혀 있고 VCN 사설 서브넷(10.0.0.0/24)
+# 에서만 허용된다. 내 PC 는 그 밖이라 직접 붙을 수 없고, 이 스크립트가 SSH 터널을 먼저
+# 열고 백엔드를 기동한다.
 # 접속 정보는 gitignore 된 src/main/resources/application-vm.yml 에만 있다.
 
 param(

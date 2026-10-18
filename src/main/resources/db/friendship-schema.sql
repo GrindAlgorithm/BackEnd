@@ -1,6 +1,7 @@
 -- 친구(팔로우) 관계 — 랭킹 탭 '친구' 스코프(연동 문서 §2.13)의 소스.
--- owner_handle(관계 소유자=나)이 friend_handle 을 친구로 추가한 단방향 행이다.
--- '친구 랭킹'은 내가 추가한 friend_handle 들의 현재 시즌 랭킹을 보여준다.
+-- owner_handle(관계 소유자=나)이 friend_handle 을 친구로 둔 행이다.
+-- 친구는 신청 → 수락(§2.18, friend_request 테이블)으로 맺어지며, 수락 시 양방향 두 행(A→B, B→A)을 넣고
+-- 끊을 때 두 행을 함께 지운다. '친구 랭킹'은 내 행의 friend_handle 들의 현재 시즌 랭킹을 보여준다.
 --
 -- season_ranking 과 동일하게 handle 문자열로 식별한다(유저 도메인 연동 전 데모 데이터와
 -- 매칭돼야 하므로 app_user FK 를 걸지 않는다 — season_ranking 주석과 동일한 이유).

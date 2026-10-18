@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,9 @@ public interface SeasonRankingRepository extends JpaRepository<SeasonRankingEnti
 
     /** 현재 시즌의 내 랭킹 행 — 토론 작성자 티어 스냅샷용 (요건 4). 미배치면 empty */
     Optional<SeasonRankingEntity> findFirstBySeason_StatusAndHandle(SeasonStatus status, String handle);
+
+    /** 현재 시즌 랭킹 행 여러 개 — 친구 화면·검색의 티어 표시(§2.18). 미배치 handle 은 빠진다 */
+    List<SeasonRankingEntity> findBySeason_StatusAndHandleIn(SeasonStatus status, Collection<String> handles);
 
     /**
      * 랭킹 행이 없을 때만 미배치 행을 만든다 — 이미 있으면(uq_season_handle) 아무것도 바꾸지 않는다.

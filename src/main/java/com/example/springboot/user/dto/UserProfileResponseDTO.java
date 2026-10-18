@@ -1,6 +1,7 @@
 package com.example.springboot.user.dto;
 
 import com.example.springboot.dashboard.dto.ActivityCalendarDTO;
+import com.example.springboot.friend.dto.FriendRelation;
 import com.example.springboot.problem.dto.TierRankDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,9 @@ public class UserProfileResponseDTO {
     private ActivityCalendarDTO activity;
     private List<RecentSolvedItemDTO> recentSolved;
     private List<RecentSubmissionItemDTO> recentSubmissions;
+    /** 로그인 열람자 기준 관계(§2.18). 비로그인이면 null → 프론트가 친구 버튼을 숨긴다 */
+    private FriendRelation friendRelation;
+    private Long friendRequestId;    // friendRelation 이 incoming/outgoing 일 때만
 
     public static UserProfileResponseDTO of(UserProfileDTO profile) {
         TierRankDTO seasonTier = profile.getSeasonTierName() == null
@@ -53,7 +57,9 @@ public class UserProfileResponseDTO {
                 profile.getSelectedTitleId(),
                 profile.getActivity(),
                 profile.getRecentSolved(),
-                profile.getRecentSubmissions()
+                profile.getRecentSubmissions(),
+                null,
+                null
         );
     }
 }
