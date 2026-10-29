@@ -35,6 +35,7 @@ public class RunServiceImpl implements RunService {
         // 실행은 채점이 아니므로 expectedOutput 없이 stdin 만으로 실행 (연동 문서 §2.9)
         Judge0ExecRequest exec = new Judge0ExecRequest(
                 languageService.resolveJudge0Id(request.getLanguage()),
+                request.getLanguage().getCompilerOptions(),
                 request.getSourceCode(),
                 request.getStdin(),
                 null,

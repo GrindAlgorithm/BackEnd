@@ -39,7 +39,7 @@ public class SubmissionGrader {
     private static final int ACCEPT_ATTEMPTS = 3;
 
     @Async
-    public void grade(long submissionId, String problemId, int judge0LangId,
+    public void grade(long submissionId, String problemId, int judge0LangId, String compilerOptions,
                       int cpuTimeLimitSec, int memoryLimitKb, String sourceCode) {
         long maxTimeMs = 0;
         long maxMemoryKb = 0;
@@ -60,7 +60,7 @@ public class SubmissionGrader {
 
             for (TestCase test : tests) {
                 Judge0Execution exec = judge0Client.execute(new Judge0ExecRequest(
-                        judge0LangId, sourceCode, test.input(), test.output(),
+                        judge0LangId, compilerOptions, sourceCode, test.input(), test.output(),
                         cpuTimeLimitSec, memoryLimitKb));
                 done++;
                 if (exec.timeMs() != null) {
