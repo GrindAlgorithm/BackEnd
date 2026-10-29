@@ -61,6 +61,9 @@ public class RealJudge0Client implements Judge0Client {
         Map<String, Object> body = new HashMap<>();
         body.put("language_id", request.languageId());
         body.put("source_code", encode(request.sourceCode()));
+        if (request.compilerOptions() != null) {
+            body.put("compiler_options", request.compilerOptions());
+        }
         if (request.stdin() != null) {
             body.put("stdin", encode(request.stdin()));
         }

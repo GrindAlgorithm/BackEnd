@@ -6,6 +6,7 @@ package com.example.springboot.judge0;
  */
 public record Judge0ExecRequest(
         int languageId,
+        String compilerOptions, // nullable
         String sourceCode,
         String stdin,          // nullable
         String expectedOutput, // nullable

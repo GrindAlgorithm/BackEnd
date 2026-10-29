@@ -84,6 +84,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getId(),
                 problem.getProblemId(),
                 judge0LangId,
+                request.getLanguage().getCompilerOptions(),
                 problem.getTimeLimitSec(),
                 problem.getMemoryLimitMb() * 1024,
                 request.getSourceCode());
