@@ -27,6 +27,9 @@ public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Lo
     /** 특정 유저의 시즌 내 전체 제출 — 시즌 화면 myStatus/리워드 계산용 (GET /seasons/current) */
     List<SubmissionEntity> findByProblem_Season_IdAndUserHandle(Integer seasonId, String userHandle);
 
+    /** 특정 유저의 한 문제 제출 전체 — 문제 상세 myStatus/시도수/마지막 시도(GET /problems/{id}) */
+    List<SubmissionEntity> findByProblem_ProblemIdAndUserHandle(String problemId, String userHandle);
+
     /** 시즌 문제의 특정 상태 제출 전체 — 대시보드 7일 순위 변동 추정(§2.4 nearbyRanking.weeklyDelta) */
     List<SubmissionEntity> findByProblem_Season_IdAndStatus(Integer seasonId, SubmissionStatus status);
 
