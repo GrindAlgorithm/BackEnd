@@ -42,7 +42,13 @@ public class ProblemDetailDTO {
     private int attemptCount;
     private LocalDateTime lastTriedAt;
 
+    /** 비로그인/이력 없음 — 미시도로 표시 */
     public static ProblemDetailDTO of(ProblemEntity problem) {
+        return of(problem, ProblemStatus.UNTRIED, 0, null);
+    }
+
+    /** 로그인 유저의 제출 이력으로 계산한 myStatus/시도수/마지막 시도를 함께 싣는다 (GET /problems/{id}) */
+    public static ProblemDetailDTO of(ProblemEntity problem, ProblemStatus myStatus, int attemptCount, LocalDateTime lastTriedAt) {
         boolean seasonal = problem.getSeason() != null;
         Integer points = seasonal ? TierScore.of(problem.getTierName(), problem.getTierLevel()) : null;
         Integer seasonId = seasonal ? problem.getSeason().getId() : null;
@@ -63,8 +69,7 @@ public class ProblemDetailDTO {
                 points,
                 seasonId,
                 problem.getDiscussionCount(),
-                // 인증/제출 연동 전: 미시도 / 시도 0 / 마지막 시도 없음
-                ProblemStatus.UNTRIED, 0, null
+                myStatus, attemptCount, lastTriedAt
         );
     }
 }
