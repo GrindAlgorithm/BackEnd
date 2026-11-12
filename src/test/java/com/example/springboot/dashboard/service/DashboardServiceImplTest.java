@@ -1,5 +1,7 @@
 package com.example.springboot.dashboard.service;
 
+import com.example.springboot.ranking.service.RankSnapshotService;
+import com.example.springboot.ranking.service.TierDecayService;
 import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import com.example.springboot.common.tier.TierScore;
@@ -31,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +49,8 @@ class DashboardServiceImplTest {
     @Mock private RecommendationRepository recommendationRepository;
     @Mock private SubmissionRepository submissionRepository;
     @Mock private RankingService rankingService;
+    @Mock private RankSnapshotService rankSnapshotService;
+    @Mock private TierDecayService tierDecayService;
     @Mock private CurrentUserProvider currentUserProvider;
 
     @InjectMocks private DashboardServiceImpl service;
@@ -135,6 +140,21 @@ class DashboardServiceImplTest {
     }
 
     @Test
+    void weeklyDeltaUsesSnapshotWhenAvailable() {
+        when(currentUserProvider.currentHandle()).thenReturn("park");
+        when(submissionRepository.findByUserHandleOrderBySubmittedAtDesc("park")).thenReturn(List.of());
+        when(rankingService.getCurrentSeasonEntries()).thenReturn(new ArrayList<>(List.of(
+                entry(1, "god", 500), entry(2, "park", 400), entry(3, "kim", 300))));
+        // 7일 전 마감 스냅샷: park 3위, god 1위, kim 은 그때 미배치(2명 → 3위 취급)
+        when(rankSnapshotService.ranksOn(2, LocalDate.now().minusDays(7))).thenReturn(Map.of("god", 1, "park", 3, "lee", 2));
+
+        List<NearbyRankingEntryDTO> nearby = service.getDashboard().getNearbyRanking();
+
+        assertEquals(List.of(0, 1, 1), nearby.stream().map(NearbyRankingEntryDTO::getWeeklyDelta).toList());
+        verify(submissionRepository, never()).findByProblem_Season_IdAndStatus(any(), any()); // 추정치 안 씀
+    }
+
+    @Test
     void topRankedUserSeesOnlyRowsBelow() {
         when(currentUserProvider.currentHandle()).thenReturn("god");
         when(submissionRepository.findByUserHandleOrderBySubmittedAtDesc("god")).thenReturn(List.of());
@@ -168,6 +188,6 @@ class DashboardServiceImplTest {
         assertEquals(0, d.getSeason().getSolvedCount());
         assertEquals("conquest", d.getSeason().getNextProblemId());
         assertEquals(0, d.getSeasonActivity().getActiveDays());
-        verifyNoInteractions(submissionRepository, rankingService);
+        verifyNoInteractions(submissionRepository, rankingService, rankSnapshotService);
     }
 }

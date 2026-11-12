@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 시즌 리워드(챌린지) 정의 — 시즌 화면 리워드 목록 (요건 5, GET /seasons/current).
- * 달성 여부는 저장하지 않는다 — 조회 시 유저의 랭킹/클리어 이력으로 계산.
+ * 달성 여부는 저장하지 않는다 — 조회 시 유저의 랭킹/클리어 이력으로 계산. 칭호 정의도 겸한다(user_title.title_id).
  */
 @Entity
 @Getter

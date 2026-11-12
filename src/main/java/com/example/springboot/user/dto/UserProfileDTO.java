@@ -1,5 +1,7 @@
 package com.example.springboot.user.dto;
 
+import com.example.springboot.dashboard.dto.DecayWarningDTO;
+import com.example.springboot.ranking.dto.RankHistoryDTO;
 import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import com.example.springboot.dashboard.dto.ActivityCalendarDTO;
@@ -32,4 +34,10 @@ public class UserProfileDTO {
     private ActivityCalendarDTO activity; // 최근 52주, 과거→오늘 순
     private List<RecentSolvedItemDTO> recentSolved;
     private List<RecentSubmissionItemDTO> recentSubmissions;
+    /** 하락 예고 — 본인 프로필에만, 곧 하락할 일이 없으면 null (§2.15 decay) */
+    private DecayWarningDTO decay;
+    /** 본인: 보유+미보유 전체 / 타인: 보유만 (§2.15 titles) */
+    private List<TitleResponseDTO> titles;
+    /** 현재 시즌 순위 추이, 미배치면 null (§2.15 rankHistory) */
+    private RankHistoryDTO rankHistory;
 }

@@ -64,4 +64,21 @@ public class SeasonRankingEntity {
         this.tierName = TierCut.nameOf(this.score);
         this.tierLevel = TierCut.levelOf(this.score);
     }
+
+    /** 이미 맞힌 문제를 다시 맞혀도 활동으로 본다 — 비활동 하락분을 점수 기준 티어로 되돌린다 (TierDecay) */
+    public void restoreTier(LocalDateTime at) {
+        this.lastActiveAt = at;
+        this.tierName = TierCut.nameOf(this.score);
+        this.tierLevel = TierCut.levelOf(this.score);
+    }
+
+    /** 비활동 하락 반영 (TierDecayService). @return 티어가 실제로 바뀌었으면 true */
+    public boolean changeTier(TierName name, TierLevel level) {
+        if (this.tierName == name && this.tierLevel == level) {
+            return false;
+        }
+        this.tierName = name;
+        this.tierLevel = level;
+        return true;
+    }
 }

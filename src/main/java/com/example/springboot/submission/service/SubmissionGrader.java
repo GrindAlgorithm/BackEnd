@@ -7,6 +7,7 @@ import com.example.springboot.judge0.Judge0Verdict;
 import com.example.springboot.problem.repository.ProblemSampleRepository;
 import com.example.springboot.problem.repository.ProblemTestcaseRepository;
 import com.example.springboot.submission.entity.SubmissionStatus;
+import com.example.springboot.title.service.TitleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -34,6 +35,7 @@ public class SubmissionGrader {
     private final ProblemTestcaseRepository problemTestcaseRepository;
     private final ProblemSampleRepository problemSampleRepository;
     private final SubmissionGradingTx tx;
+    private final TitleService titleService;
 
     /** 정답 반영 트랜잭션 재시도 횟수 — 락 대기 초과·교착 같은 일시적 실패로 정답이 오답 처리되지 않게 */
     private static final int ACCEPT_ATTEMPTS = 3;
@@ -100,7 +102,7 @@ public class SubmissionGrader {
     private void finishAcceptedWithRetry(long submissionId, long timeMs, long memoryKb) {
         for (int attempt = 1; ; attempt++) {
             try {
-                tx.finishAccepted(submissionId, timeMs, memoryKb);
+                awardTitles(tx.finishAccepted(submissionId, timeMs, memoryKb));
                 return;
             } catch (ConcurrencyFailureException e) {
                 if (attempt >= ACCEPT_ATTEMPTS) {
@@ -109,6 +111,18 @@ public class SubmissionGrader {
                 log.warn("finishAccepted 재시도 {}/{} submissionId={} — {}",
                         attempt, ACCEPT_ATTEMPTS, submissionId, e.getMessage());
             }
+        }
+    }
+
+    /** 정답 반영 뒤 칭호 발급 — 별도 트랜잭션. 실패해도 채점 결과는 그대로(자정 일괄 발급이 다시 시도한다) */
+    private void awardTitles(SubmissionGradingTx.AcceptedResult result) {
+        if (result == null) {
+            return;
+        }
+        try {
+            titleService.awardUser(result.handle(), result.seasonId());
+        } catch (Exception e) {
+            log.warn("칭호 발급 실패 handle={} seasonId={} — 자정 일괄 발급에서 재시도", result.handle(), result.seasonId(), e);
         }
     }
 

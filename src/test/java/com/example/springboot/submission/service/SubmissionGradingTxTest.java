@@ -114,10 +114,36 @@ class SubmissionGradingTxTest {
         givenSubmission(3L, "park", practice);
         givenAlreadySolved(false);
 
+        // 현재 시즌 랭킹 행이 있으면 비활동 하락만 복구한다 — 점수·풀이 수·행 생성은 없음
+        ranking.applyAccepted(1300, LocalDateTime.now().minusDays(30)); // 골드 V(1300)
+        ranking.changeTier(TierName.SILVER, TierLevel.I);               // 하락 상태라고 가정
+        when(seasonRankingRepository.findForUpdateBySeasonStatus(SeasonStatus.CURRENT, "park"))
+                .thenReturn(Optional.of(ranking));
+
         tx.finishAccepted(3L, 90L, 1000L);
 
-        verifyNoInteractions(seasonRankingRepository);
+        verify(seasonRankingRepository, never()).insertIfAbsent(any(), any(), any(), any(), any());
         verify(problemRepository).incrementStats(11L, 1, 1);
+        assertEquals(1300, ranking.getScore());
+        assertEquals(1, ranking.getSolvedCount());
+        assertEquals(TierName.GOLD, ranking.getTierName());
+        assertEquals(TierLevel.V, ranking.getTierLevel());
+    }
+
+    @Test
+    void repeatSolveRestoresDecayedTier() {
+        givenSubmission(5L, "park", problem);
+        ranking.applyAccepted(2500, LocalDateTime.now().minusDays(30)); // 플래티넘 I
+        ranking.changeTier(TierName.PLATINUM, TierLevel.III);
+        when(seasonRankingRepository.findForUpdate(2, "park")).thenReturn(Optional.of(ranking));
+        givenAlreadySolved(true);
+
+        tx.finishAccepted(5L, 90L, 1000L);
+
+        assertEquals(2500, ranking.getScore());
+        assertEquals(TierName.PLATINUM, ranking.getTierName());
+        assertEquals(TierLevel.I, ranking.getTierLevel());
+        verify(seasonRankingRepository, never()).findForUpdateBySeasonStatus(any(), any());
     }
 
     @Test
