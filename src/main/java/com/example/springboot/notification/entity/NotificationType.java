@@ -11,8 +11,12 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum NotificationType {
-    FRIEND_REQUEST("friend_request"),   // 친구 신청을 받음
-    FRIEND_ACCEPTED("friend_accepted"); // 내가 보낸 신청이 수락됨
+    FRIEND_REQUEST("friend_request"),    // 친구 신청을 받음
+    FRIEND_ACCEPTED("friend_accepted"),  // 내가 보낸 신청이 수락됨
+    PROBLEM_SOLVED("problem_solved"),    // 제출이 정답 처리됨
+    PROBLEM_FAILED("problem_failed"),    // 제출이 오답/에러로 종결됨
+    SEASON_ENDED("season_ended"),        // 시즌 종료 — 최종 순위 안내
+    RANK_CHANGED("rank_changed");        // 내 순위가 전날 대비 변동됨
 
     @JsonValue
     private final String value;

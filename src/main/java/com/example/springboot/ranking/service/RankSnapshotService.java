@@ -1,5 +1,7 @@
 package com.example.springboot.ranking.service;
 
+import com.example.springboot.notification.entity.NotificationType;
+import com.example.springboot.notification.service.NotificationService;
 import com.example.springboot.ranking.dto.RankHistoryDTO;
 import com.example.springboot.ranking.dto.RankingEntryDTO;
 import com.example.springboot.ranking.entity.SeasonRankSnapshotEntity;
@@ -28,6 +30,7 @@ public class RankSnapshotService {
     private final SeasonRepository seasonRepository;
     private final SeasonRankSnapshotRepository snapshotRepository;
     private final RankingService rankingService;
+    private final NotificationService notificationService;
 
     /**
      * 현재 시즌 순위표를 snapshotDate 마감 기준으로 저장한다. 그날 스냅샷이 이미 있으면 건너뛴다.
@@ -47,6 +50,40 @@ public class RankSnapshotService {
                 .toList();
         snapshotRepository.saveAll(rows);
         return rows.size();
+    }
+
+    /**
+     * 순위 변동 알림 — 현재 시즌에서 newDate 마감 순위를 prevDate 마감 순위와 비교해,
+     * 순위가 바뀐 유저에게 "X위 → Y위" 알림을 남긴다(일 1회, 스케줄러가 스냅샷 직후 호출).
+     * 두 날짜 중 하나라도 스냅샷이 없으면(시즌 초반 등) 아무것도 하지 않는다.
+     * 처음 순위에 든 유저(prev 에 없음)는 변동이 아니라 제외한다.
+     *
+     * @return 알림을 보낸 유저 수
+     */
+    @Transactional
+    public int notifyRankChanges(LocalDate newDate, LocalDate prevDate) {
+        SeasonEntity season = currentSeason();
+        if (season == null) {
+            return 0;
+        }
+        Map<String, Integer> now = ranksOn(season.getId(), newDate);
+        Map<String, Integer> prev = ranksOn(season.getId(), prevDate);
+        if (now == null || prev == null) {
+            return 0;
+        }
+        int notified = 0;
+        for (Map.Entry<String, Integer> e : now.entrySet()) {
+            Integer before = prev.get(e.getKey());
+            int after = e.getValue();
+            if (before == null || before == after) {
+                continue; // 신규 진입이거나 변동 없음
+            }
+            String arrow = after < before ? "상승" : "하락";
+            notificationService.notify(e.getKey(), NotificationType.RANK_CHANGED, null, (long) season.getId(),
+                    season.getName() + " 순위 " + arrow + " — " + before + "위 → " + after + "위");
+            notified++;
+        }
+        return notified;
     }
 
     /**

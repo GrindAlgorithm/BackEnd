@@ -41,6 +41,7 @@ class SubmissionGradingTxTest {
     @Mock private SubmissionRepository submissionRepository;
     @Mock private SeasonRankingRepository seasonRankingRepository;
     @Mock private ProblemRepository problemRepository;
+    @Mock private com.example.springboot.notification.service.NotificationService notificationService;
 
     @InjectMocks private SubmissionGradingTx tx;
 

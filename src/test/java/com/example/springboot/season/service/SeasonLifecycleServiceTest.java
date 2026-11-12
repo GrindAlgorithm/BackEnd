@@ -21,6 +21,8 @@ import static org.mockito.Mockito.when;
 class SeasonLifecycleServiceTest {
 
     @Mock private SeasonRepository seasonRepository;
+    @Mock private com.example.springboot.ranking.repository.SeasonRankingRepository seasonRankingRepository;
+    @Mock private com.example.springboot.notification.service.NotificationService notificationService;
 
     @InjectMocks private SeasonLifecycleService service;
 
@@ -81,5 +83,34 @@ class SeasonLifecycleServiceTest {
         service.syncStatuses(LocalDate.parse("2026-09-28"));
         assertEquals(SeasonStatus.CURRENT, early.getStatus());
         assertEquals(SeasonStatus.PAST, s2.getStatus());
+    }
+
+    @Test
+    void seasonEndNotifiesParticipantsFinalRank() {
+        org.springframework.test.util.ReflectionTestUtils.setField(s2, "id", 2);
+        // 점수 내림차순: god(1위), kim(2위)
+        when(seasonRankingRepository.findBySeason_IdOrderByScoreDesc(2)).thenReturn(List.of(
+                ranking("algo_god", 3000), ranking("kim_dev", 2000)));
+
+        service.syncStatuses(LocalDate.parse("2026-10-01")); // s2 CURRENT → PAST
+
+        org.mockito.Mockito.verify(notificationService).notify(
+                org.mockito.ArgumentMatchers.eq("algo_god"),
+                org.mockito.ArgumentMatchers.eq(com.example.springboot.notification.entity.NotificationType.SEASON_ENDED),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(2L),
+                org.mockito.ArgumentMatchers.contains("최종 1위"));
+        org.mockito.Mockito.verify(notificationService).notify(
+                org.mockito.ArgumentMatchers.eq("kim_dev"),
+                org.mockito.ArgumentMatchers.eq(com.example.springboot.notification.entity.NotificationType.SEASON_ENDED),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(2L),
+                org.mockito.ArgumentMatchers.contains("최종 2위"));
+    }
+
+    private com.example.springboot.ranking.entity.SeasonRankingEntity ranking(String handle, int score) {
+        return com.example.springboot.ranking.entity.SeasonRankingEntity.createSeasonRankingEntity(
+                s2, handle, com.example.springboot.common.tier.TierName.GOLD,
+                com.example.springboot.common.tier.TierLevel.I, score, 1, LocalDate.parse("2026-09-30").atStartOfDay());
     }
 }

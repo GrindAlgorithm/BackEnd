@@ -3,6 +3,8 @@ package com.example.springboot.submission.service;
 import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import com.example.springboot.common.tier.TierScore;
+import com.example.springboot.notification.entity.NotificationType;
+import com.example.springboot.notification.service.NotificationService;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
 import com.example.springboot.ranking.entity.SeasonRankingEntity;
@@ -34,6 +36,7 @@ public class SubmissionGradingTx {
     private final SubmissionRepository submissionRepository;
     private final SeasonRankingRepository seasonRankingRepository;
     private final ProblemRepository problemRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public void markJudging(long submissionId) {
@@ -52,6 +55,7 @@ public class SubmissionGradingTx {
         submissionRepository.findById(submissionId).ifPresent(s -> {
             s.finish(status, timeMs, memoryKb);
             problemRepository.incrementStats(s.getProblem().getId(), 0, 0);
+            notifyResult(s, status);
         });
     }
 
@@ -85,6 +89,7 @@ public class SubmissionGradingTx {
 
         submission.finish(SubmissionStatus.ACCEPTED, timeMs, memoryKb);
         problemRepository.incrementStats(problem.getId(), 1, firstSolve ? 1 : 0);
+        notifyResult(submission, SubmissionStatus.ACCEPTED);
 
         if (ranking != null && firstSolve) {
             applyRanking(ranking, problem, handle); // 점수 기준 티어 재계산 = 하락분 복구 포함
@@ -113,6 +118,37 @@ public class SubmissionGradingTx {
     /** 로그인 유저의 시즌 문제만 시즌 점수 대상 */
     private boolean isRankable(String handle, ProblemEntity problem) {
         return handle != null && !ANONYMOUS_HANDLE.equalsIgnoreCase(handle) && problem.getSeason() != null;
+    }
+
+    /**
+     * 채점 종결 알림 — 제출자 본인에게 "정답/오답" 알림을 남긴다(연습문제 결과 확인).
+     * 미로그인(anonymous) 제출은 알리지 않는다. actor 는 시스템 이벤트라 null.
+     */
+    private void notifyResult(SubmissionEntity submission, SubmissionStatus status) {
+        String handle = submission.getUserHandle();
+        if (handle == null || ANONYMOUS_HANDLE.equalsIgnoreCase(handle)) {
+            return;
+        }
+        String title = submission.getProblem().getTitle();
+        if (status == SubmissionStatus.ACCEPTED) {
+            notificationService.notify(handle, NotificationType.PROBLEM_SOLVED, null, submission.getId(),
+                    "'" + title + "' 정답입니다 🎉");
+        } else {
+            notificationService.notify(handle, NotificationType.PROBLEM_FAILED, null, submission.getId(),
+                    "'" + title + "' " + verdictLabel(status));
+        }
+    }
+
+    /** 오답/에러 상태의 한국어 라벨 */
+    private String verdictLabel(SubmissionStatus status) {
+        return switch (status) {
+            case WRONG_ANSWER -> "틀렸습니다";
+            case TIME_LIMIT -> "시간 초과입니다";
+            case MEMORY_LIMIT -> "메모리 초과입니다";
+            case RUNTIME_ERROR -> "런타임 에러입니다";
+            case COMPILE_ERROR -> "컴파일 에러입니다";
+            default -> "채점에 실패했습니다";
+        };
     }
 
     /** 랭킹 행이 없으면 미배치 행으로 만들고(있으면 그대로), 쓰기 잠금을 잡아 반환한다 */
