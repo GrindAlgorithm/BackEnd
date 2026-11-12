@@ -58,6 +58,13 @@ public class SeasonScheduler {
                 log.info("순위 스냅샷 — {} 마감 {}명", today.minusDays(1), saved);
             }
         });
+        step("순위 변동 알림", () -> {
+            // 어제 마감 vs 그제 마감 비교 — 전날 순위가 바뀐 유저에게 알림
+            int notified = rankSnapshotService.notifyRankChanges(today.minusDays(1), today.minusDays(2));
+            if (notified > 0) {
+                log.info("순위 변동 알림 — {}명", notified);
+            }
+        });
         step("시즌 상태 동기화", () -> {
             int changed = seasonLifecycleService.syncStatuses(today);
             if (changed > 0) {
