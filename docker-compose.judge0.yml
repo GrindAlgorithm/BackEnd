@@ -18,10 +18,14 @@ services:
       POSTGRES_DB: judge0
     volumes:
       - judge0-db-data:/var/lib/postgresql/data
+    # server/workers 가 이 DB에 의존한다. 이게 조용히 죽으면 server 가 DB 연결 실패로
+    # 빈 응답(소켓 EOF)을 내 모든 채점이 RUNTIME_ERROR 가 된다 — 반드시 함께 재기동한다.
+    restart: unless-stopped
 
   judge0-redis:
     image: redis:7
     command: ["redis-server", "--appendonly", "no"]
+    restart: unless-stopped
 
   judge0-server:
     image: judge0/judge0:1.13.1
