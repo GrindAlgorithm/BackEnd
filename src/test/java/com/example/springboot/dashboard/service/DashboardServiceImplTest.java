@@ -86,7 +86,7 @@ class DashboardServiceImplTest {
 
     private SubmissionEntity sub(ProblemEntity p, String handle, SubmissionStatus status, LocalDateTime at) {
         return SubmissionEntity.createSubmissionEntity(p, handle, null, status, null, null, null,
-                LanguageCode.JAVA11, 100, at);
+                LanguageCode.JAVA11, 100, "code", at);
     }
 
     private RankingEntryDTO entry(int rank, String handle, int score) {

@@ -87,7 +87,7 @@ class TitleServiceTest {
 
     private SubmissionEntity accepted(String handle, ProblemEntity p) {
         return SubmissionEntity.createSubmissionEntity(p, handle, null, SubmissionStatus.ACCEPTED, null, null, null,
-                LanguageCode.PYTHON3, 10, LocalDateTime.now());
+                LanguageCode.PYTHON3, 10, "code", LocalDateTime.now());
     }
 
     private SeasonRankingEntity row(String handle, int score, int solved) {

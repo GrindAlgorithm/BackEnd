@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS submission (
     memory_kb    BIGINT      NULL,
     language     VARCHAR(16) NOT NULL,          -- JAVA11 | PYTHON3 | CPP17 | NODEJS (enum 이름)
     code_bytes   INT         NOT NULL,
+    source_code  MEDIUMTEXT  NULL,              -- 제출 소스코드 전문 (GET /submissions/{id} 재조회용)
     submitted_at DATETIME    NOT NULL,
     INDEX idx_submission_solve_session (solve_session_id),
     CONSTRAINT fk_submission_problem FOREIGN KEY (problem_id) REFERENCES problem (id)

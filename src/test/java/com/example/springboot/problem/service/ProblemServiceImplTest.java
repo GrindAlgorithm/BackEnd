@@ -88,6 +88,6 @@ class ProblemServiceImplTest {
 
     private SubmissionEntity sub(SubmissionStatus status, LocalDateTime at) {
         return SubmissionEntity.createSubmissionEntity(problem, "me", null, status, null, null, null,
-                LanguageCode.JAVA11, 100, at);
+                LanguageCode.JAVA11, 100, "code", at);
     }
 }
