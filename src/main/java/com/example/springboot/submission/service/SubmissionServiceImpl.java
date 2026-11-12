@@ -76,7 +76,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         int codeBytes = request.getSourceCode().getBytes(StandardCharsets.UTF_8).length;
         SubmissionEntity submission = SubmissionEntity.createSubmissionEntity(
                 problem, userHandle, solveSessionId, SubmissionStatus.QUEUED, 0, null, null,
-                request.getLanguage(), codeBytes, LocalDateTime.now());
+                request.getLanguage(), codeBytes, request.getSourceCode(), LocalDateTime.now());
         submissionRepository.save(submission); // 자체 트랜잭션으로 즉시 커밋
 
         // 비동기 채점 시작 — 필요한 값만 primitive 로 넘겨 지연로딩/세션 문제 회피

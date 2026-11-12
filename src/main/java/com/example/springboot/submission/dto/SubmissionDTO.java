@@ -28,6 +28,7 @@ public class SubmissionDTO {
     private Long memoryKb;
     private LanguageCode language;
     private int codeBytes;
+    private String sourceCode;
     private LocalDateTime submittedAt;
 
     public static SubmissionDTO of(SubmissionEntity submission) {
@@ -44,6 +45,7 @@ public class SubmissionDTO {
                 submission.getMemoryKb(),
                 submission.getLanguage(),
                 submission.getCodeBytes(),
+                submission.getSourceCode(),
                 submission.getSubmittedAt()
         );
     }

@@ -62,7 +62,7 @@ class SubmissionGradingTxTest {
 
     private SubmissionEntity givenSubmission(long id, String handle, ProblemEntity p) {
         SubmissionEntity s = SubmissionEntity.createSubmissionEntity(p, handle, "sess", SubmissionStatus.JUDGING,
-                0, null, null, LanguageCode.JAVA11, 100, LocalDateTime.now());
+                0, null, null, LanguageCode.JAVA11, 100, "code", LocalDateTime.now());
         ReflectionTestUtils.setField(s, "id", id);
         when(submissionRepository.findById(id)).thenReturn(Optional.of(s));
         return s;

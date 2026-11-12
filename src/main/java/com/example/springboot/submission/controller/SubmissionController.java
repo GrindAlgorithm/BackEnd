@@ -74,6 +74,6 @@ public class SubmissionController {
         if (submission == null) {
             return ResponseResult.<SubmissionResponseDTO>error(null);
         }
-        return ResponseResult.success(SubmissionResponseDTO.of(submission));
+        return ResponseResult.success(SubmissionResponseDTO.ofDetail(submission));
     }
 }

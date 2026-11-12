@@ -55,14 +55,18 @@ public class SubmissionEntity {
     @Column(name = "code_bytes", nullable = false)
     private int codeBytes;
 
+    /** 제출한 소스코드 전문 — 제출 상세(GET /submissions/{id})에서 다시 조회한다. */
+    @Column(name = "source_code", columnDefinition = "MEDIUMTEXT")
+    private String sourceCode;
+
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
     public static SubmissionEntity createSubmissionEntity(ProblemEntity problem, String userHandle, String solveSessionId,
                                                           SubmissionStatus status, Integer progress, Long timeMs, Long memoryKb,
-                                                          LanguageCode language, int codeBytes, LocalDateTime submittedAt) {
+                                                          LanguageCode language, int codeBytes, String sourceCode, LocalDateTime submittedAt) {
         return new SubmissionEntity(null, problem, userHandle, solveSessionId, status, progress, timeMs, memoryKb,
-                language, codeBytes, submittedAt);
+                language, codeBytes, sourceCode, submittedAt);
     }
 
     /** 채점 시작: 상태 JUDGING, 진행률 0 */
