@@ -12,6 +12,8 @@ import com.example.springboot.friend.entity.FriendRequestEntity;
 import com.example.springboot.friend.entity.FriendshipEntity;
 import com.example.springboot.friend.repository.FriendRequestRepository;
 import com.example.springboot.friend.repository.FriendshipRepository;
+import com.example.springboot.notification.entity.NotificationType;
+import com.example.springboot.notification.service.NotificationService;
 import com.example.springboot.problem.dto.TierRankDTO;
 import com.example.springboot.ranking.entity.SeasonRankingEntity;
 import com.example.springboot.ranking.repository.SeasonRankingRepository;
@@ -58,6 +60,7 @@ public class FriendServiceImpl implements FriendService {
     private final UserRepository userRepository;
     private final SeasonRankingRepository rankingRepository;
     private final SubmissionRepository submissionRepository;
+    private final NotificationService notificationService;
 
     @Override
     public FriendsResponseDTO getFriends(String me) {
@@ -140,6 +143,9 @@ public class FriendServiceImpl implements FriendService {
             throw ApiException.conflict("FRIEND_REQUEST_EXISTS", "이미 신청을 보냈습니다");
         }
         log.info("friend request sent : from={}, to={}, id={}", me, target, saved.getId());
+        // 수신자에게 알림 — 프론트 Nav 뱃지/알림 목록의 소스
+        notificationService.notify(target, NotificationType.FRIEND_REQUEST, me, saved.getId(),
+                me + " 님이 친구 신청을 보냈습니다");
         return new FriendRequestDTO(saved.getId(), friendUsers(List.of(target)).get(target), saved.getCreatedAt());
     }
 
@@ -159,6 +165,9 @@ public class FriendServiceImpl implements FriendService {
         friendshipRepository.insertIfAbsent(other, me, now);
         // 서로 동시에 신청해 역방향 신청이 남아 있을 수 있다
         requestRepository.deleteBetween(me, other);
+        // 신청자에게 수락 알림
+        notificationService.notify(other, NotificationType.FRIEND_ACCEPTED, me, null,
+                me + " 님이 친구 신청을 수락했습니다");
         log.info("friend request accepted : id={}, {} <-> {}", requestId, other, me);
     }
 

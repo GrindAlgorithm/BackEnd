@@ -37,6 +37,7 @@ class FriendServiceImplTest {
     @Mock private UserRepository userRepository;
     @Mock private SeasonRankingRepository rankingRepository;
     @Mock private SubmissionRepository submissionRepository;
+    @Mock private com.example.springboot.notification.service.NotificationService notificationService;
 
     @InjectMocks private FriendServiceImpl service;
 
