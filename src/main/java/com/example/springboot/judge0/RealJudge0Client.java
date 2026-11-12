@@ -10,6 +10,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
@@ -98,28 +99,31 @@ public class RealJudge0Client implements Judge0Client {
 
     /** wait=true: POST 한 번으로 완료 결과를 받는다. */
     private Judge0Response submitAndWait(byte[] payload) {
-        return restClient.post()
+        byte[] raw = restClient.post()
                 .uri(uri -> uri.path("/submissions")
                         .queryParam("base64_encoded", true)
                         .queryParam("wait", true)
                         .build())
                 .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
                 .body(payload)
                 .retrieve()
-                .body(Judge0Response.class);
+                .body(byte[].class);
+        return readResponse(raw);
     }
 
     /** wait=false: 토큰을 받은 뒤 status.id 가 큐/처리중(1,2)을 벗어날 때까지 GET 폴링. */
     private Judge0Response submitAndPoll(byte[] payload) {
-        Judge0Response created = restClient.post()
+        Judge0Response created = readResponse(restClient.post()
                 .uri(uri -> uri.path("/submissions")
                         .queryParam("base64_encoded", true)
                         .queryParam("wait", false)
                         .build())
                 .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
                 .body(payload)
                 .retrieve()
-                .body(Judge0Response.class);
+                .body(byte[].class));
 
         if (created == null || created.token == null) {
             log.warn("[judge0] 제출 토큰 없음 — INTERNAL_ERROR 처리");
@@ -128,12 +132,13 @@ public class RealJudge0Client implements Judge0Client {
         String token = created.token;
 
         for (int i = 0; i < props.getPollMaxTries(); i++) {
-            Judge0Response res = restClient.get()
+            Judge0Response res = readResponse(restClient.get()
                     .uri(uri -> uri.path("/submissions/{token}")
                             .queryParam("base64_encoded", true)
                             .build(token))
+                    .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
-                    .body(Judge0Response.class);
+                    .body(byte[].class));
             // status.id 1=In Queue, 2=Processing → 아직 채점 중
             if (res != null && res.status != null && res.status.id > 2) {
                 return res;
@@ -148,6 +153,24 @@ public class RealJudge0Client implements Judge0Client {
         }
         log.warn("[judge0] 폴링 타임아웃 token={} ({}회 초과)", token, props.getPollMaxTries());
         return null;
+    }
+
+    /**
+     * 응답 본문(바이트)을 JSON 으로 직접 파싱한다. 일부 self-host Judge0 는 Content-Type 을
+     * application/octet-stream 으로 돌려줘 Spring 기본 Jackson 변환기가
+     * "Error while extracting response ... content type [application/octet-stream]" 로 실패한다.
+     * Content-Type 에 의존하지 않도록 byte[] 로 받아 ObjectMapper 로 파싱한다.
+     */
+    private Judge0Response readResponse(byte[] raw) {
+        if (raw == null || raw.length == 0) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(raw, Judge0Response.class);
+        } catch (IOException e) {
+            log.warn("[judge0] 응답 파싱 실패 — {}", new String(raw, StandardCharsets.UTF_8), e);
+            return null;
+        }
     }
 
     private String encode(String s) {
