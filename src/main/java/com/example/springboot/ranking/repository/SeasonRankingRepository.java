@@ -19,6 +19,9 @@ public interface SeasonRankingRepository extends JpaRepository<SeasonRankingEnti
     /** 특정 시즌 랭킹 — 점수 내림차순(= 순위 순). 연동 문서 §2.13 season scope */
     List<SeasonRankingEntity> findBySeason_IdOrderByScoreDesc(Integer seasonId);
 
+    /** 상태로 고른 시즌의 랭킹 — 점수 내림차순. 하락 반영·순위 스냅샷(CURRENT)용 */
+    List<SeasonRankingEntity> findBySeason_StatusOrderByScoreDesc(SeasonStatus status);
+
     /** 전체 시즌 랭킹 — overall 집계용(핸들별 합산은 서비스에서) */
     List<SeasonRankingEntity> findAllByOrderByScoreDesc();
 
@@ -49,4 +52,10 @@ public interface SeasonRankingRepository extends JpaRepository<SeasonRankingEnti
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM SeasonRankingEntity r WHERE r.season.id = :seasonId AND r.handle = :handle")
     Optional<SeasonRankingEntity> findForUpdate(@Param("seasonId") Integer seasonId, @Param("handle") String handle);
+
+    /** 상태로 고른 시즌(CURRENT)의 랭킹 행 쓰기 잠금 — 비시즌 문제 정답 시 하락 티어 복구용 */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM SeasonRankingEntity r WHERE r.season.status = :status AND r.handle = :handle")
+    Optional<SeasonRankingEntity> findForUpdateBySeasonStatus(@Param("status") SeasonStatus status,
+                                                              @Param("handle") String handle);
 }

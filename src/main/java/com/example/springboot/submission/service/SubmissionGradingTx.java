@@ -7,6 +7,7 @@ import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
 import com.example.springboot.ranking.entity.SeasonRankingEntity;
 import com.example.springboot.ranking.repository.SeasonRankingRepository;
+import com.example.springboot.season.entity.SeasonStatus;
 import com.example.springboot.submission.entity.SubmissionEntity;
 import com.example.springboot.submission.entity.SubmissionStatus;
 import com.example.springboot.submission.repository.SubmissionRepository;
@@ -67,15 +68,17 @@ public class SubmissionGradingTx {
      * </ul>
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void finishAccepted(long submissionId, Long timeMs, Long memoryKb) {
+    public AcceptedResult finishAccepted(long submissionId, Long timeMs, Long memoryKb) {
         SubmissionEntity submission = submissionRepository.findById(submissionId).orElse(null);
         if (submission == null) {
-            return;
+            return null;
         }
         ProblemEntity problem = submission.getProblem();
         String handle = submission.getUserHandle();
 
         SeasonRankingEntity ranking = isRankable(handle, problem) ? lockRankingRow(problem, handle) : null;
+        // 비활동 하락 복구 대상 — 현재 시즌 랭킹 행. 문제 행보다 먼저 잠근다(잠금 순서 유지)
+        SeasonRankingEntity current = currentRankingRow(problem, handle, ranking);
 
         boolean firstSolve = !submissionRepository.existsByProblem_ProblemIdAndUserHandleAndStatusAndIdNot(
                 problem.getProblemId(), handle, SubmissionStatus.ACCEPTED, submissionId);
@@ -84,8 +87,27 @@ public class SubmissionGradingTx {
         problemRepository.incrementStats(problem.getId(), 1, firstSolve ? 1 : 0);
 
         if (ranking != null && firstSolve) {
-            applyRanking(ranking, problem, handle);
+            applyRanking(ranking, problem, handle); // 점수 기준 티어 재계산 = 하락분 복구 포함
         }
+        if (current != null && !(current == ranking && firstSolve)) {
+            current.restoreTier(LocalDateTime.now()); // 재풀이·비시즌 문제 정답도 활동으로 본다 (TierDecay)
+        }
+        return ranking == null ? null : new AcceptedResult(handle, problem.getSeason().getId());
+    }
+
+    /** 정답 반영 결과 — 랭킹에 반영된 유저·시즌 (칭호 발급 대상). 랭킹 대상이 아니면 finishAccepted 가 null 반환 */
+    public record AcceptedResult(String handle, Integer seasonId) {
+    }
+
+    /** 현재 시즌 랭킹 행(잠금). 이 문제가 현재 시즌 문제면 이미 잠근 행을 그대로 쓴다. 미배치·익명이면 null */
+    private SeasonRankingEntity currentRankingRow(ProblemEntity problem, String handle, SeasonRankingEntity ranking) {
+        if (ranking != null && problem.getSeason().getStatus() == SeasonStatus.CURRENT) {
+            return ranking;
+        }
+        if (handle == null || ANONYMOUS_HANDLE.equalsIgnoreCase(handle)) {
+            return null;
+        }
+        return seasonRankingRepository.findForUpdateBySeasonStatus(SeasonStatus.CURRENT, handle).orElse(null);
     }
 
     /** 로그인 유저의 시즌 문제만 시즌 점수 대상 */

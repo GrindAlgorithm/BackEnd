@@ -55,4 +55,13 @@ public interface SubmissionRepository extends JpaRepository<SubmissionEntity, Lo
             + "FROM SubmissionEntity s WHERE s.userHandle IN :handles GROUP BY s.userHandle")
     List<Object[]> summarizeByHandles(@Param("handles") Collection<String> handles,
                                       @Param("accepted") SubmissionStatus accepted);
+
+    /**
+     * 유저별 마지막 정답 제출 시각 — [handle, MAX(submittedAt)]. 비활동 티어 하락(TierDecay) 기준.
+     * 시즌 문제가 아니어도, 이미 맞힌 문제를 다시 맞혀도 활동으로 센다.
+     */
+    @Query("SELECT s.userHandle, MAX(s.submittedAt) FROM SubmissionEntity s "
+            + "WHERE s.userHandle IN :handles AND s.status = :accepted GROUP BY s.userHandle")
+    List<Object[]> lastSubmittedAtByHandles(@Param("handles") Collection<String> handles,
+                                            @Param("accepted") SubmissionStatus accepted);
 }

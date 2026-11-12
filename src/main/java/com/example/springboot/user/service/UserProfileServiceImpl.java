@@ -6,6 +6,9 @@ import com.example.springboot.dashboard.dto.ActivityDayDTO;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.ranking.entity.SeasonRankingEntity;
 import com.example.springboot.ranking.repository.SeasonRankingRepository;
+import com.example.springboot.ranking.service.RankSnapshotService;
+import com.example.springboot.ranking.service.TierDecayService;
+import com.example.springboot.title.service.TitleService;
 import com.example.springboot.season.entity.SeasonEntity;
 import com.example.springboot.season.entity.SeasonStatus;
 import com.example.springboot.season.repository.SeasonRepository;
@@ -48,6 +51,9 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final SubmissionRepository submissionRepository;
     private final SeasonRankingRepository rankingRepository;
     private final SeasonRepository seasonRepository;
+    private final TierDecayService tierDecayService;
+    private final TitleService titleService;
+    private final RankSnapshotService rankSnapshotService;
 
     @Override
     public UserProfileDTO getProfile(String handle, String viewerHandle) {
@@ -75,6 +81,11 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .map(RecentSubmissionItemDTO::of)
                 .toList());
         applySeasonRanking(profile, handle);
+        LocalDate today = LocalDate.now();
+        // 하락 예고는 본인에게만 (§2.15 — 타인 응답에선 null)
+        profile.setDecay(profile.isMe() ? tierDecayService.warningFor(handle, today) : null);
+        profile.setTitles(titleService.titlesFor(handle, profile.isMe()));
+        profile.setRankHistory(rankSnapshotService.historyFor(handle, today));
         return profile;
     }
 
@@ -85,11 +96,11 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (user == null) {
             return false;
         }
-        // 칭호 발급 도메인(A4) 구현 전 — 보유 칭호가 없으므로 해제(null)만 유효 (§2.16 400: 미보유 지정)
-        if (titleId != null) {
+        // 해제(null)는 항상 허용, 지정은 보유 칭호만 (§2.16 400: 미보유 지정)
+        if (titleId != null && !titleService.owns(user.getHandle(), titleId)) {
             return false;
         }
-        user.changeTitle(null);
+        user.changeTitle(titleId);
         return true;
     }
 

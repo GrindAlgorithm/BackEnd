@@ -1,6 +1,5 @@
 package com.example.springboot.season.service;
 
-import com.example.springboot.common.tier.TierName;
 import com.example.springboot.problem.dto.ProblemSummaryDTO;
 import com.example.springboot.problem.entity.ProblemStatus;
 import com.example.springboot.problem.repository.ProblemRepository;
@@ -155,45 +154,16 @@ public class SeasonServiceImpl implements SeasonService {
         return Math.min(1.0, Math.max(0.0, Math.round(ratio * 100) / 100.0));
     }
 
-    /** 리워드 달성 여부/진행 문구 — 조회 유저의 랭킹·클리어 이력 기준 */
+    /** 리워드 달성 여부/진행 문구 — 조회 유저의 랭킹·클리어 이력 기준 (판정은 RewardEvaluator 공용) */
     private SeasonRewardDTO buildReward(SeasonRewardEntity reward, Integer myRank, SeasonRankingEntity myRow,
                                         int clearedCount, int totalCount) {
-        boolean achieved;
-        String progressText;
-        switch (reward.getConditionType()) {
-            case CHAMPION -> {
-                // 시즌 종료 시점에 확정 — 진행 중에는 현재 순위만 노출
-                achieved = false;
-                progressText = myRank == null ? "진행중 (순위 없음)" : "진행중 (" + myRank + "위)";
-            }
-            case REACH_DIAMOND -> {
-                achieved = myRow != null && myRow.getTierName() == TierName.DIAMOND;
-                progressText = achieved ? "달성"
-                        : myRow == null ? "진행중 (미배치)"
-                        : "진행중 (" + koreanTier(myRow.getTierName()) + " " + myRow.getTierLevel().name() + ")";
-            }
-            case CLEAR_ALL -> {
-                achieved = totalCount > 0 && clearedCount >= totalCount;
-                progressText = achieved ? "달성" : "진행중 (" + clearedCount + "/" + totalCount + ")";
-            }
-            case CLEAR_COUNT -> {
-                int need = reward.getThreshold() == null ? 1 : reward.getThreshold();
-                achieved = clearedCount >= need;
-                progressText = achieved ? "달성" : "진행중 (" + clearedCount + "/" + need + ")";
-            }
-            case SOLVE_COUNT -> {
-                int need = reward.getThreshold() == null ? 0 : reward.getThreshold();
-                int solved = myRow == null ? 0 : myRow.getSolvedCount();
-                achieved = need > 0 && solved >= need;
-                progressText = achieved ? "달성" : "진행중 (" + solved + "/" + need + ")";
-            }
-            default -> {
-                achieved = false;
-                progressText = "진행중";
-            }
-        }
+        RewardEvaluator.Result r = RewardEvaluator.evaluate(reward, new RewardEvaluator.Progress(
+                myRank,
+                myRow == null ? null : myRow.getScore(),
+                myRow == null ? 0 : myRow.getSolvedCount(),
+                clearedCount, totalCount, false));
         return new SeasonRewardDTO(reward.getId(), reward.getName(), reward.getColorKey(),
-                reward.getConditionText(), achieved, progressText);
+                reward.getConditionText(), r.achieved(), r.progressText());
     }
 
     /** 지난 시즌 목록 — 챔피언은 해당 시즌 랭킹 1위. 랭킹이 없는 시즌은 표에서 제외(계약상 champion 필수) */
@@ -223,16 +193,5 @@ public class SeasonServiceImpl implements SeasonService {
         }
         return season.getStartDate().getMonthValue() + "/" + season.getStartDate().getDayOfMonth()
                 + " ~ " + season.getEndDate().getMonthValue() + "/" + season.getEndDate().getDayOfMonth();
-    }
-
-    /** 티어 한글 표기 (리워드 진행 문구용) */
-    private String koreanTier(TierName tierName) {
-        return switch (tierName) {
-            case BRONZE -> "브론즈";
-            case SILVER -> "실버";
-            case GOLD -> "골드";
-            case PLATINUM -> "플래티넘";
-            case DIAMOND -> "다이아";
-        };
     }
 }

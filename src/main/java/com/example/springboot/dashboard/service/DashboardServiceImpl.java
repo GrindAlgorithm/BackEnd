@@ -9,7 +9,9 @@ import com.example.springboot.problem.dto.TierRankDTO;
 import com.example.springboot.problem.entity.ProblemEntity;
 import com.example.springboot.problem.repository.ProblemRepository;
 import com.example.springboot.ranking.dto.RankingEntryDTO;
+import com.example.springboot.ranking.service.RankSnapshotService;
 import com.example.springboot.ranking.service.RankingService;
+import com.example.springboot.ranking.service.TierDecayService;
 import com.example.springboot.recommendation.repository.RecommendationRepository;
 import com.example.springboot.season.entity.SeasonEntity;
 import com.example.springboot.season.entity.SeasonStatus;
@@ -47,6 +49,8 @@ public class DashboardServiceImpl implements DashboardService {
     private final RecommendationRepository recommendationRepository;
     private final SubmissionRepository submissionRepository;
     private final RankingService rankingService;
+    private final RankSnapshotService rankSnapshotService;
+    private final TierDecayService tierDecayService;
     private final CurrentUserProvider currentUserProvider;
 
     @Override
@@ -72,7 +76,7 @@ public class DashboardServiceImpl implements DashboardService {
         Map<ProblemEntity, LocalDateTime> firstSolvedAt = ActivityStats.firstSolvedAt(mySubmissions);
 
         return new DashboardDTO(
-                null,                                   // decay: 하락 공식 미확정(A1) → null
+                tierDecayService.warningFor(handle, today),
                 buildTodayPicks(),
                 buildNearbyRanking(currentSeason, handle),
                 buildSeasonProgress(currentSeason, seasonProblems, firstSolvedAt, today),
@@ -158,7 +162,8 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * 내 주변 순위(±2) — 현재 시즌 순위표에서 내 위아래를 자른다. 미배치·비로그인이면 빈 목록.
-     * weeklyDelta = 7일 전 순위 − 현재 순위(+면 상승). 순위 이력 테이블이 없으므로 7일 전 순위는
+     * weeklyDelta = 7일 전 순위 − 현재 순위(+면 상승). 7일 전 날짜의 순위 스냅샷이 있으면 그 값을 쓰고
+     * (그때 미배치였으면 "그날 꼴찌 다음"으로 본다), 스냅샷이 쌓이기 전이면
      * "현재 점수 − 최근 7일 첫 정답으로 얻은 점수"로 다시 줄 세워 추정한다.
      */
     private List<NearbyRankingEntryDTO> buildNearbyRanking(SeasonEntity season, String handle) {
@@ -177,7 +182,7 @@ public class DashboardServiceImpl implements DashboardService {
             return List.of();
         }
 
-        Map<String, Integer> pastRank = rankDaysAgo(season, entries);
+        Map<String, Integer> pastRank = pastRanks(season, entries);
         List<NearbyRankingEntryDTO> nearby = new ArrayList<>();
         for (int i = Math.max(0, me - NEARBY_RANGE); i <= Math.min(entries.size() - 1, me + NEARBY_RANGE); i++) {
             RankingEntryDTO e = entries.get(i);
@@ -189,6 +194,20 @@ public class DashboardServiceImpl implements DashboardService {
                     i == me));
         }
         return nearby;
+    }
+
+    /** 7일 전 순위 (handle → rank) — 스냅샷 우선, 없으면 추정 */
+    private Map<String, Integer> pastRanks(SeasonEntity season, List<RankingEntryDTO> entries) {
+        Map<String, Integer> snapshot = rankSnapshotService.ranksOn(season.getId(), LocalDate.now().minusDays(DELTA_DAYS));
+        if (snapshot == null || snapshot.isEmpty()) {
+            return rankDaysAgo(season, entries);
+        }
+        int unranked = snapshot.size() + 1;
+        Map<String, Integer> rank = new HashMap<>();
+        for (RankingEntryDTO e : entries) {
+            rank.put(e.getHandle(), snapshot.getOrDefault(e.getHandle(), unranked));
+        }
+        return rank;
     }
 
     /** 7일 전 추정 순위 (handle → rank). 동점은 현재 순서를 유지한다(안정 정렬) */

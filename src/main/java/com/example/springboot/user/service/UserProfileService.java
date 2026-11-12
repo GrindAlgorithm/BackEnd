@@ -8,8 +8,8 @@ public interface UserProfileService {
     UserProfileDTO getProfile(String handle, String viewerHandle);
 
     /**
-     * PUT /me/title — 대표 칭호 선택 (§2.16). 해제(null)만 허용.
-     * 칭호 발급 도메인(A4) 구현 전이라 보유 칭호가 없으므로, 비-null 지정은 미보유(false)로 거부한다.
+     * PUT /me/title — 대표 칭호 선택 (§2.16). 해제(null)는 항상 허용, 지정은 보유 칭호만.
+     * 미보유 칭호(또는 없는 유저)면 false → 400.
      */
     boolean updateTitle(String email, String titleId);
 }

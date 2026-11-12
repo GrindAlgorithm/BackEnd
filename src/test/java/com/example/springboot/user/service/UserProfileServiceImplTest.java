@@ -1,5 +1,8 @@
 package com.example.springboot.user.service;
 
+import com.example.springboot.ranking.service.RankSnapshotService;
+import com.example.springboot.ranking.service.TierDecayService;
+import com.example.springboot.title.service.TitleService;
 import com.example.springboot.common.tier.TierLevel;
 import com.example.springboot.common.tier.TierName;
 import com.example.springboot.problem.entity.ProblemEntity;
@@ -35,6 +38,9 @@ class UserProfileServiceImplTest {
     @Mock private SubmissionRepository submissionRepository;
     @Mock private SeasonRankingRepository rankingRepository;
     @Mock private SeasonRepository seasonRepository;
+    @Mock private TierDecayService tierDecayService;
+    @Mock private TitleService titleService;
+    @Mock private RankSnapshotService rankSnapshotService;
 
     @InjectMocks private UserProfileServiceImpl service;
 
